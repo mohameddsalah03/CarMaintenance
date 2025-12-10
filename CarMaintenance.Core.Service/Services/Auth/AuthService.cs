@@ -75,7 +75,6 @@ namespace CarMaintenance.Core.Service.Services.Auth
         public async Task<bool> EmailExists(string email)
             => await userManager.FindByEmailAsync(email!) is not null;
         
-
         private async Task<string> GenerateTokenAsync(ApplicationUser user)
         {
             var userCliams = await userManager.GetClaimsAsync(user);
@@ -107,6 +106,21 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 );
 
             return new JwtSecurityTokenHandler().WriteToken(tokenObj);  
+        }
+
+        public Task<UserDto> GoogleLoginAsync(GoogleLoginDto googleLoginDto)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
+        {
+            throw new NotImplementedException();
         }
     }
 }

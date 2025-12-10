@@ -23,7 +23,7 @@ namespace CarMaintenance.APIs
 
             //Extensions Services Layers 
             builder.Services.AddPersistenceServices(builder.Configuration);
-            builder.Services.AddApplicationServices();
+            builder.Services.AddApplicationServices(builder.Configuration);
 
          
             // register for Identity [user manager]
