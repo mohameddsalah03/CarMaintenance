@@ -2,14 +2,13 @@
 
 namespace CarMaintenance.Core.Domain.Contracts.Persistence
 {
-    public interface IUnitOfWork : IAsyncDisposable
+    public interface IUnitOfWork
     {
 
-        IGenericRepository<TEntity,TKey> GetRepository<TEntity, TKey>()
-            where TEntity : BaseEntity<TKey>
-            where TKey : IEquatable<TKey>;
+        public IGenericRepository<TEntity, Tkey> GetRepo<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>;
 
-        Task<int> CompleteAsync();
+
+        Task<int> SaveChangesAsync();
 
     }
 }

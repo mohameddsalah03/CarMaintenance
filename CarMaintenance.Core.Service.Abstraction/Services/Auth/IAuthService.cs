@@ -7,7 +7,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Auth
         
 
 
-        Task<UserDto> LoginAysnc(LoginDto loginDto);
+        Task<UserDto> LoginAsync(LoginDto loginDto);
         Task<UserDto> RegisterAsync(RegisterDto registerDto);
         Task<bool> EmailExists(string email);
         Task<UserDto> GoogleLoginAsync(GoogleLoginDto googleLoginDto);

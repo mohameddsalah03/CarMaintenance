@@ -8,14 +8,14 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
     public class AccountController(IAuthService _authService) : BaseApiController
     {
 
-        [HttpPost("login")] //Post: /api/account/login
+        [HttpPost("Login")] //Post: /api/account/Login
         public async Task<ActionResult<UserDto>> Login(LoginDto model)
         {
-            var user = await _authService.LoginAysnc(model);
+            var user = await _authService.LoginAsync(model);
             return Ok(user);
         }
 
-        [HttpPost("register")] //Post: /api/account/register
+        [HttpPost("Register")] //Post: /api/account/Register
 
         public async Task<ActionResult<UserDto>> Register(RegisterDto model)
         {
@@ -25,7 +25,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
 
 
 
-        [HttpGet("emailexists")] //Put: /api/account/emailexists?email= ahmed.gmail.com
+        [HttpGet("EmailExists")] //Get: /api/account/EmailExists?email= ahmed.gmail.com
         public async Task<ActionResult<bool>> CheckEmailExists(string email)
         {
             var result = await _authService.EmailExists(email);

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
-namespace CarMaintenance.Infrastructure.Persistence.Identity
+namespace CarMaintenance.Infrastructure.Persistence.Contexts
 {
     public class CarIdentityDbContext : IdentityDbContext<ApplicationUser>
     {
