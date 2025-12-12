@@ -1,4 +1,5 @@
 using CarMaintenance.APIs.Extensions;
+using CarMaintenance.APIs.Middlewares;
 using CarMaintenance.Core.Service;
 using CarMaintenance.Infrastructure.Persistence;
 
@@ -39,6 +40,7 @@ namespace CarMaintenance.APIs
 
             #region Configure Kestral Middlewares (Pipelines)
 
+            app.UseMiddleware<ExceptionHandlerMiddleware>();
 
             if (app.Environment.IsDevelopment())
             {
@@ -47,7 +49,8 @@ namespace CarMaintenance.APIs
             }
 
             app.UseHttpsRedirection();
-
+            
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
