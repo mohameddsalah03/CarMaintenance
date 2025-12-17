@@ -1,4 +1,4 @@
-﻿using CarMaintenance.Infrastructure.Persistence.Identity;
+﻿using CarMaintenance.Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,16 +22,20 @@ namespace CarMaintenance.Infrastructure.Persistence
             {
                 options.UseSqlServer(configuration.GetConnectionString("IdentityContext"));
             });
+            services.AddDbContext<CarDbContext>(options =>
+            {
+                options.UseSqlServer(configuration.GetConnectionString("MainContext"));
+            });
 
             //
             //services.AddScoped(typeof(IStoreIdentityDbInitializer), typeof(StoreIdentityDbInitializer));
 
             #endregion
 
-           
 
 
-             
+
+
             return services;
         }
     

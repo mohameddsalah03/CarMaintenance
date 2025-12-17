@@ -2,7 +2,7 @@
 
 namespace CarMaintenance.Core.Domain.Models.Base
 {
-    public abstract class BaseEntity<TKey> where TKey :  IEquatable<TKey>
+    public abstract class BaseEntity<TKey> 
     {
         public TKey Id { get; set; } 
 

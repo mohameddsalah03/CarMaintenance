@@ -25,7 +25,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
     {
         private readonly JwtSettings _jwtSettings = _jwtSettings.Value;
       
-        public async Task<UserDto> LoginAysnc(LoginDto loginDto)
+        public async Task<UserDto> LoginAsync(LoginDto loginDto)
         {
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user is null) throw new UnauthorizedException("Invalid Login");
