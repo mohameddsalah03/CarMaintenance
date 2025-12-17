@@ -1,11 +1,6 @@
 ﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Domain.Models.Base;
 using CarMaintenance.Infrastructure.Persistence.Contexts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CarMaintenance.Infrastructure.Persistence.Repos
 {

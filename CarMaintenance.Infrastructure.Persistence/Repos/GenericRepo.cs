@@ -2,15 +2,11 @@
 using CarMaintenance.Core.Domain.Models.Base;
 using CarMaintenance.Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CarMaintenance.Infrastructure.Persistence.Repos
 {
-    public class GenericRepo<TEntity,TKey>(CarDbContext _context) : IGenericRepository<TEntity, TKey> where TEntity : BaseEntity<TKey>
+    public class GenericRepo<TEntity,TKey>(CarDbContext _context) : 
+        IGenericRepository<TEntity, TKey> where TEntity : BaseEntity<TKey>
     {
         public  async Task AddAsync(TEntity entity)
         {
