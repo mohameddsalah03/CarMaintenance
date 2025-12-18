@@ -20,10 +20,13 @@ namespace CarMaintenance.Core.Service.Services.Auth
         UserManager<ApplicationUser> _userManager ,
         SignInManager<ApplicationUser> _signInManager,
         IOptions<JwtSettings> _jwtSettings,
-        IEmailService _emailService
+        IEmailService _emailService,
+        IOptions<AppSettings> _appSettings 
         ) : IAuthService
     {
         private readonly JwtSettings _jwtSettings = _jwtSettings.Value;
+        private readonly AppSettings _appSettings = _appSettings.Value;
+
       
         public async Task<UserDto> LoginAsync(LoginDto loginDto)
         {
@@ -35,13 +38,18 @@ namespace CarMaintenance.Core.Service.Services.Auth
             if (result.IsNotAllowed) throw new UnauthorizedException("Account Not Confirmed Yet.");
             if (result.IsLockedOut) throw new UnauthorizedException("Account Is Locked.");
             if (!result.Succeeded) throw new UnauthorizedException("Invalid Login."); // Must in Last
+            
+            // ✅ Generate both tokens
+            var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
             var response = new UserDto()
             {
                 Id = user.Id,
                 DisplayName = user.DisplayName,
                 Email = user.Email!,
-                Token =await GenerateTokenAsync(user),
+                Token = accessToken, // Access Token
+                RefreshToken = refreshToken, // Refresh Token
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
             };
 
             return response;
@@ -69,52 +77,24 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 Errors = result.Errors.Select(E=>E.Description)
             };
 
+            // ✅ Generate both tokens
+            var (accessToken, refreshToken) = await GenerateTokensAsync(user);
+
             var response = new UserDto()
             {
                 Id = user.Id,
                 DisplayName = user.DisplayName,
                 Email = user.Email!,
-                Token = await GenerateTokenAsync(user),
+                Token = accessToken,
+                RefreshToken = refreshToken,
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
             };
-            
             return response;    
         }
 
        
         public async Task<bool> EmailExists(string email)
             => await _userManager.FindByEmailAsync(email!) is not null;
-
-
-        private async Task<string> GenerateTokenAsync(ApplicationUser user)
-        {
-
-            List<Claim> ClaimList = new List<Claim>()
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, user.UserName!),
-                new Claim(ClaimTypes.Email, user.Email!)
-            };
-            
-            var roles = await _userManager.GetRolesAsync(user);
-            
-            foreach (var role in roles)
-                ClaimList.Add(new Claim(ClaimTypes.Role, role));
-            
-            var secretKey = _jwtSettings.Key;
-            var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
-            var signInCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
-            
-            var tokenObj = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                expires: DateTime.UtcNow.AddMinutes(30),
-                claims: ClaimList,
-                signingCredentials: signInCredentials
-                );
-            
-            return new JwtSecurityTokenHandler().WriteToken(tokenObj);
-
-        }
 
         public async Task<UserDto> GoogleLoginAsync(GoogleLoginDto googleLoginDto)
         {
@@ -143,12 +123,17 @@ namespace CarMaintenance.Core.Service.Services.Auth
                         };
                 }
 
+                // ✅ Generate both tokens
+                var (accessToken, refreshToken) = await GenerateTokensAsync(user);
+
                 return new UserDto()
                 {
                     Id = user.Id,
                     DisplayName = user.DisplayName,
                     Email = user.Email!,
-                    Token = await GenerateTokenAsync(user),
+                    Token = accessToken,
+                    RefreshToken = refreshToken,
+                    TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
                 };
             }
             catch (InvalidJwtException)
@@ -157,17 +142,17 @@ namespace CarMaintenance.Core.Service.Services.Auth
             }
         }
 
-        public async Task<bool> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
+        public async Task ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+
             if (user is null)
-                return false; // لا نخبر المستخدم أن البريد غير موجود لأسباب أمنية
+                return;
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            // رابط إعادة تعيين كلمة المرور (يمكنك تخصيصه حسب الـ Frontend)
-            var resetUrl = $"https://your-frontend-url/reset-password?email={user.Email}&token={encodedToken}";
+            var resetUrl = $"{_appSettings.FrontendUrl}/reset-password?email={user.Email}&token={encodedToken}";
 
             var emailBody = $@"
                 <h2>إعادة تعيين كلمة المرور</h2>
@@ -175,31 +160,144 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
                 <p>يرجى الضغط على الرابط التالي لإعادة تعيين كلمة المرور:</p>
                 <a href='{resetUrl}'>إعادة تعيين كلمة المرور</a>
+                <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
                 <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد.</p>
             ";
 
             await _emailService.SendEmailAsync(user.Email!, "إعادة تعيين كلمة المرور", emailBody);
-
-            return true;
         }
 
-        public async Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
+        public async Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
             if (user is null)
                 throw new BadRequestException("Invalid request");
 
-            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(resetPasswordDto.Token));
+            try
+            {
+                var decodedToken = Encoding.UTF8.GetString(
+                    WebEncoders.Base64UrlDecode(resetPasswordDto.Token));
 
-            var result = await _userManager.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
+                var result = await _userManager.ResetPasswordAsync(
+                    user, decodedToken, resetPasswordDto.NewPassword);
 
-            if (!result.Succeeded)
-                throw new ValidationException()
-                {
-                    Errors = result.Errors.Select(e => e.Description)
-                };
-
-            return true;
+                if (!result.Succeeded)
+                    throw new ValidationException()
+                    {
+                        Errors = result.Errors.Select(e => e.Description)
+                    };
+            }
+            catch (FormatException)
+            {
+                throw new BadRequestException("Invalid or expired token");
+            }
         }
+
+        #region Helper Methods 
+
+        //  إضافة Method لتوليد Refresh Token
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+            using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+
+
+        //  تعديل GenerateTokenAsync عشان ترجع Access Token + Refresh Token
+        private async Task<(string accessToken, string refreshToken)> GenerateTokensAsync(ApplicationUser user)
+        {
+            // Generate Access Token (نفس الكود القديم)
+            List<Claim> ClaimList = new List<Claim>()
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(ClaimTypes.Email, user.Email!)
+            };
+
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var role in roles)
+                ClaimList.Add(new Claim(ClaimTypes.Role, role));
+
+            var secretKey = _jwtSettings.Key;
+            var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
+            var signInCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
+
+            var tokenObj = new JwtSecurityToken(
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes), // 15 دقيقة
+                claims: ClaimList,
+                signingCredentials: signInCredentials
+            );
+
+            var accessToken = new JwtSecurityTokenHandler().WriteToken(tokenObj);
+
+            // Generate Refresh Token
+            var refreshToken = GenerateRefreshToken();
+
+            // Save Refresh Token in Database
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenDurationInDays); // 7 أيام
+            await _userManager.UpdateAsync(user);
+
+            return (accessToken, refreshToken);
+        }
+
+
+
+        #endregion
+
+        public async Task<UserDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+        {
+            // 1. Validate Access Token (بدون التحقق من Expiry)
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(refreshTokenDto.Token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key)),
+                ValidateIssuer = true,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = _jwtSettings.Audience,
+                ValidateLifetime = false, // ✅ مش مهم لو منتهي
+                ClockSkew = TimeSpan.Zero
+            }, out SecurityToken validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+
+            // 2. Extract user email from token
+            var userEmail = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(userEmail))
+                throw new UnauthorizedException("Invalid token");
+
+            // 3. Get user from database
+            var user = await _userManager.FindByEmailAsync(userEmail);
+            if (user is null)
+                throw new UnauthorizedException("Invalid token");
+
+            // 4. Validate Refresh Token
+            if (user.RefreshToken != refreshTokenDto.RefreshToken)
+                throw new UnauthorizedException("Invalid refresh token");
+
+            if (user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                throw new UnauthorizedException("Refresh token expired");
+
+            // 5. Generate new tokens
+            var (newAccessToken, newRefreshToken) = await GenerateTokensAsync(user);
+
+            return new UserDto()
+            {
+                Id = user.Id,
+                DisplayName = user.DisplayName,
+                Email = user.Email!,
+                Token = newAccessToken,
+                RefreshToken = newRefreshToken,
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
+            };
+        }
+
+
     }
 }

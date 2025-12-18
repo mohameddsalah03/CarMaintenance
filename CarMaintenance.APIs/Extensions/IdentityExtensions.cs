@@ -17,7 +17,7 @@ namespace CarMaintenance.APIs.Extensions
             services.AddIdentity<ApplicationUser, IdentityRole>(identityOptions =>
             {
                 identityOptions.User.RequireUniqueEmail = true;
-                identityOptions.Password.RequireNonAlphanumeric = true;
+                identityOptions.Password.RequireNonAlphanumeric = true;// 
                 identityOptions.Password.RequiredUniqueChars = 1;
                 identityOptions.Password.RequiredLength = 6;
                 identityOptions.Password.RequireUppercase = true;
@@ -50,7 +50,30 @@ namespace CarMaintenance.APIs.Extensions
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(configuration["jwtSttings:Key"]!))
                 };
+
+                // Read Token from Cookie
+                configureOptions.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        // جرب تقرأ من Cookie الأول
+                        var token = context.Request.Cookies["accessToken"];
+
+                        //  لو مش موجود في Cookie، جرب Authorization Header
+                        if (string.IsNullOrEmpty(token))
+                        {
+                            token = context.Request.Headers["Authorization"]
+                                .ToString().Replace("Bearer ", "");
+                        }
+
+                        context.Token = token;
+                        return Task.CompletedTask;
+                    }
+                };
             });
+
+
+            
 
             authBuilder.AddGoogle(googleOptions =>
             {
