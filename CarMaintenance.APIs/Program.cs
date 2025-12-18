@@ -74,13 +74,13 @@ namespace CarMaintenance.APIs
 
             var app = builder.Build();
 
-
+            app.MapControllers();
 
             #region Configure Kestral Middlewares (Pipelines)
 
             app.UseMiddleware<ExceptionHandlerMiddleware>();
 
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
