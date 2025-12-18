@@ -15,5 +15,14 @@ namespace CarMaintenance.Shared.DTOs.Auth
 
         [Required]
         public required string Token { get; set; }
+
+
+        // ✅ إضافة Refresh Token
+        [Required]
+        public required string RefreshToken { get; set; }
+
+        // ✅ إضافة Expiry (اختياري - للفرونت يعرف امتى ينتهي)
+        public DateTime TokenExpiry { get; set; }
+
     }
 }

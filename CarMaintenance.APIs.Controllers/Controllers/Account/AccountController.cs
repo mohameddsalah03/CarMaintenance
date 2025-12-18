@@ -54,6 +54,13 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(new { message = "تم إعادة تعيين كلمة المرور بنجاح" });
         }
 
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<UserDto>> RefreshToken(RefreshTokenDto model)
+        {
+            var user = await _authService.RefreshTokenAsync(model);
+            return Ok(user);
+        }
+
 
     }
 }

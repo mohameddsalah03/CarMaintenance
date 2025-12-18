@@ -8,5 +8,9 @@
         public required string Audience { get; set; }
         public required string Issuer { get; set; }
         public required double DurationInMinutes { get; set; }
+
+        
+        // إضافة Refresh Token Duration
+        public required int RefreshTokenDurationInDays { get; set; }
     }
 }
