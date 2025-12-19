@@ -48,14 +48,17 @@ namespace CarMaintenance.APIs
                 });
             });
 
+
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+            // Configure CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173", "https://your-frontend-url.com") // Frontend URLs
+                    policy.WithOrigins(allowedOrigins!) // من appsettings.json
                           .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .AllowCredentials(); //Cookies
+                          .AllowCredentials(); // للـ Cookies
                 });
             });
 
