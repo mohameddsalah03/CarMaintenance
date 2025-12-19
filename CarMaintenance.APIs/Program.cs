@@ -2,6 +2,7 @@
 using CarMaintenance.APIs.Middlewares;
 using CarMaintenance.Core.Service;
 using CarMaintenance.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.OpenApi.Models;
 
 namespace CarMaintenance.APIs
@@ -90,7 +91,7 @@ namespace CarMaintenance.APIs
 
             app.UseHttpsRedirection();
 
-
+            app.UseRouting();
             app.UseCors("AllowFrontend"); 
             app.UseAuthentication();
             app.UseAuthorization();
