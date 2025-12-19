@@ -77,7 +77,6 @@ namespace CarMaintenance.APIs
 
             var app = builder.Build();
 
-            app.MapControllers();
 
             #region Configure Kestral Middlewares (Pipelines)
 
