@@ -2,11 +2,14 @@
 {
     public class NotFoundException : ApplicationException
     {
-                            
-        public NotFoundException(string name , object key) // Entity, Pk
-            :base($"The {name} With Id:{key} Is Not Found!") 
+        public NotFoundException(string name, object key)
+            : base($"{name} with ID '{key}' was not found.")
         {
-            
+        }
+
+        public NotFoundException(string message)
+            : base(message)
+        {
         }
     }
 }

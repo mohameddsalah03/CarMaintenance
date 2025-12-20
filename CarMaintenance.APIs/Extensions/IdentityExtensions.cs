@@ -51,29 +51,23 @@ namespace CarMaintenance.APIs.Extensions
                         Encoding.UTF8.GetBytes(configuration["jwtSttings:Key"]!))
                 };
 
-                // Read Token from Cookie
+                // Authorization Header 
                 configureOptions.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
-                        // جرب تقرأ من Cookie الأول
-                        var token = context.Request.Cookies["accessToken"];
-
-                        //  لو مش موجود في Cookie، جرب Authorization Header
-                        if (string.IsNullOrEmpty(token))
+                        // read from Authorization Header  only 
+                        var authHeader = context.Request.Headers["Authorization"].ToString();
+                        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
                         {
-                            token = context.Request.Headers["Authorization"]
-                                .ToString().Replace("Bearer ", "");
+                            context.Token = authHeader.Substring("Bearer ".Length).Trim();
                         }
-
-                        context.Token = token;
                         return Task.CompletedTask;
                     }
                 };
             });
 
 
-            
 
             authBuilder.AddGoogle(googleOptions =>
             {
