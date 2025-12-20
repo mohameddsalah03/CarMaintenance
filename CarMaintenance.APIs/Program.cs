@@ -2,8 +2,8 @@
 using CarMaintenance.APIs.Middlewares;
 using CarMaintenance.Core.Service;
 using CarMaintenance.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.OpenApi.Models;
+using System.Text.Json;
 
 namespace CarMaintenance.APIs
 {
@@ -18,7 +18,12 @@ namespace CarMaintenance.APIs
 
 
             builder.Services.AddControllers()
-                .AddApplicationPart(typeof(Controllers.AssemblyInformation).Assembly); //Register Reqiured Services By ASP.NET Core Web APIs To DI Container 
+                .AddApplicationPart(typeof(Controllers.AssemblyInformation).Assembly)
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                });
 
             //Reauired Services For Swagger
             builder.Services.AddEndpointsApiExplorer();
