@@ -2,10 +2,14 @@
 {
     public class UnauthorizedException : ApplicationException
     {
-        public UnauthorizedException(string? message =null)
-            : base(message) { } 
-        
-            
-        
+        public UnauthorizedException()
+            : base("Unauthorized access.")
+        {
+        }
+
+        public UnauthorizedException(string message)
+            : base(message)
+        {
+        }
     }
 }

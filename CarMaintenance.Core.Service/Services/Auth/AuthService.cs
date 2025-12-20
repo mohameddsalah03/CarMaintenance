@@ -39,7 +39,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
             if (result.IsLockedOut) throw new UnauthorizedException("Account Is Locked.");
             if (!result.Succeeded) throw new UnauthorizedException("Invalid Login."); // Must in Last
             
-            // ✅ Generate both tokens
+            // Generate both tokens
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
             var response = new UserDto()
@@ -72,12 +72,15 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
             var result = await _userManager.CreateAsync(user , registerDto.Password);
 
-            if(!result.Succeeded) throw new ValidationException() 
+            if (!result.Succeeded)
             {
-                Errors = result.Errors.Select(E=>E.Description)
-            };
+                throw new ValidationException(
+                    "Registration failed",
+                    result.Errors.Select(e => e.Description)
+                );
+            }
 
-            // ✅ Generate both tokens
+            //  Generate both tokens
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
             var response = new UserDto()
@@ -117,13 +120,15 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
                     var createResult = await _userManager.CreateAsync(user);
                     if (!createResult.Succeeded)
-                        throw new ValidationException()
-                        {
-                            Errors = createResult.Errors.Select(e => e.Description)
-                        };
+                    {
+                        throw new ValidationException(
+                            "Failed to create user account",
+                            createResult.Errors.Select(e => e.Description)
+                        );
+                    }
                 }
 
-                // ✅ Generate both tokens
+                //  Generate both tokens
                 var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
                 return new UserDto()
@@ -182,10 +187,12 @@ namespace CarMaintenance.Core.Service.Services.Auth
                     user, decodedToken, resetPasswordDto.NewPassword);
 
                 if (!result.Succeeded)
-                    throw new ValidationException()
-                    {
-                        Errors = result.Errors.Select(e => e.Description)
-                    };
+                {
+                    throw new ValidationException(
+                        "Failed to reset password",
+                        result.Errors.Select(e => e.Description)
+                    );
+                }
             }
             catch (FormatException)
             {

@@ -2,19 +2,24 @@
 {
     public class ApiValidationErrorResponse : ApiResponse
     {
+        public IEnumerable<string> Errors { get; set; }
 
-        public required IEnumerable<ValidationError>  Errors { get; set; }
-        public ApiValidationErrorResponse(string? message = null)
-            : base(400 , message)
+        public ApiValidationErrorResponse()
+            : base(400, "One or more validation errors occurred.")
         {
-            
+            Errors = Enumerable.Empty<string>();
         }
 
-        public class ValidationError
+        public ApiValidationErrorResponse(IEnumerable<string> errors)
+            : base(400, "One or more validation errors occurred.")
         {
-            public required string Field { get; set; }
-            public required IEnumerable<string> Errors { get; set; }
+            Errors = errors;
         }
 
+        public ApiValidationErrorResponse(string message, IEnumerable<string> errors)
+            : base(400, message)
+        {
+            Errors = errors;
+        }
     }
 }

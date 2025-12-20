@@ -58,8 +58,7 @@ namespace CarMaintenance.APIs
                 {
                     policy.WithOrigins(allowedOrigins!) // من appsettings.json
                           .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials(); // للـ Cookies
+                          .AllowAnyMethod();
                 });
             });
 
