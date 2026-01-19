@@ -1,4 +1,5 @@
 ﻿using CarMaintenance.Infrastructure.Persistence.Contexts;
+using CarMaintenance.Infrastructure.Persistence.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
