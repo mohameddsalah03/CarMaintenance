@@ -1,5 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Identity;
-using CarMaintenance.Infrastructure.Persistence.Contexts;
+using CarMaintenance.Infrastructure.Persistence.Identity;
 using CarMaintenance.Shared.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
