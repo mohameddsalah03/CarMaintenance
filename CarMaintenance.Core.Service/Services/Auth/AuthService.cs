@@ -151,7 +151,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
         {
             var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
             if (user is null)
-                return;
+                throw  new UnauthorizedException("This User is not Registered");
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
