@@ -33,6 +33,7 @@ namespace CarMaintenance.APIs.Middlewares
             }
         }
 
+
         private async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
             context.Response.ContentType = "application/json";
@@ -41,24 +42,20 @@ namespace CarMaintenance.APIs.Middlewares
             {
                 ValidationException validationEx => new ApiValidationErrorResponse(
                     validationEx.Message,
-                    validationEx.Errors
+                    validationEx.Errors 
                 ),
-
                 NotFoundException notFoundEx => new ApiResponse(
                     StatusCodes.Status404NotFound,
                     notFoundEx.Message
                 ),
-
                 UnauthorizedException unauthorizedEx => new ApiResponse(
                     StatusCodes.Status401Unauthorized,
                     unauthorizedEx.Message
                 ),
-
                 BadRequestException badRequestEx => new ApiResponse(
                     StatusCodes.Status400BadRequest,
                     badRequestEx.Message
                 ),
-
                 _ => _environment.IsDevelopment()
                     ? new ApiExceptionResponse(
                         StatusCodes.Status500InternalServerError,
@@ -75,7 +72,8 @@ namespace CarMaintenance.APIs.Middlewares
 
             var options = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = _environment.IsDevelopment()
             };
 
             await context.Response.WriteAsync(

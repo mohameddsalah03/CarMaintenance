@@ -23,14 +23,16 @@ namespace CarMaintenance.Core.Service
             //services.AddScoped(typeof(IServiceManager), typeof(ServiceManager));
 
 
-            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
+            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+            services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
 
             // 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmailService, EmailService>();
-            
-           
+
+
+
 
             return services;
         }

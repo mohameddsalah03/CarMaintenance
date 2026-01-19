@@ -150,28 +150,30 @@ namespace CarMaintenance.Core.Service.Services.Auth
         public async Task ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
-
             if (user is null)
                 return;
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            var resetUrl = $"{_appSettings.FrontendUrl}/reset-password?email={user.Email}&token={encodedToken}";
+            //  استخدم TrimEnd عشان تتأكد مفيش مشاكل
+            var resetUrl = $"{_appSettings.FrontendUrl.TrimEnd('/')}/reset-password?email={user.Email}&token={encodedToken}";
+
+            // للتأكد (اختياري - شيله بعد التيست)
+            //Console.WriteLine($"Reset URL: {resetUrl}");
 
             var emailBody = $@"
-                <h2>إعادة تعيين كلمة المرور</h2>
-                <p>مرحباً {user.DisplayName},</p>
-                <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
-                <p>يرجى الضغط على الرابط التالي لإعادة تعيين كلمة المرور:</p>
-                <a href='{resetUrl}'>إعادة تعيين كلمة المرور</a>
-                <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
-                <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد.</p>
-            ";
+                             <h2>إعادة تعيين كلمة المرور</h2>
+                             <p>مرحباً {user.DisplayName},</p>
+                             <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
+                             <p>يرجى الضغط على الرابط التالي لإعادة تعيين كلمة المرور:</p>
+                             <a href='{resetUrl}'>إعادة تعيين كلمة المرور</a>
+                             <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
+                            <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد.</p>
+                        ";
 
             await _emailService.SendEmailAsync(user.Email!, "إعادة تعيين كلمة المرور", emailBody);
         }
-
         public async Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
