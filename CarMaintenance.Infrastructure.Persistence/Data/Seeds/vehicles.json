@@ -1,0 +1,16 @@
+[
+  {
+    "model": "كامري",
+    "brand": "تويوتا",
+    "year": 2022,
+    "plateNumber": "س م أ 1234",
+    "userId": "customer-001"
+  },
+  {
+    "model": "أكورد",
+    "brand": "هوندا",
+    "year": 2021,
+    "plateNumber": "ب ن د 5678",
+    "userId": "customer-001"
+  }
+]

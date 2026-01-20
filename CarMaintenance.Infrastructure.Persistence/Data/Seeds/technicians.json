@@ -1,0 +1,20 @@
+[
+  {
+    "id": "tech-001",
+    "specialization": "متخصص محركات",
+    "rating": 4.8,
+    "isAvailable": true
+  },
+  {
+    "id": "tech-002",
+    "specialization": "أنظمة كهرباء السيارات",
+    "rating": 4.5,
+    "isAvailable": true
+  },
+  {
+    "id": "tech-003",
+    "specialization": "تكييف وتبريد",
+    "rating": 4.6,
+    "isAvailable": false
+  }
+]

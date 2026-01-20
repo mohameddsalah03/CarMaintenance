@@ -2,7 +2,7 @@
 {
     public interface IDbInitializer
     {
-        Task InitializeAsync();
+        Task InitializeAsync(); 
         Task SeedAsync();
     }
 }

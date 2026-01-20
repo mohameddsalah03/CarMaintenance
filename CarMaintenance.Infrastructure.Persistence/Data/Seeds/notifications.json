@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "title": "تم تأكيد الحجز",
+    "message": "تم تأكيد حجزك رقم BK-2026-0001 بنجاح",
+    "isRead": false,
+    "createdAt": "2026-01-18T09:00:00",
+    "userId": "customer-001"
+  },
+  {
+    "id": 2,
+    "title": "تذكير بالموعد",
+    "message": "لديك موعد غداً الساعة 10 صباحاً",
+    "isRead": false,
+    "createdAt": "2026-01-21T20:00:00",
+    "userId": "customer-001"
+  },
+  {
+    "id": 3,
+    "title": "حجز جديد",
+    "message": "تم استلام طلب الحجز الخاص بك",
+    "isRead": true,
+    "createdAt": "2026-01-24T13:00:00",
+    "userId": "customer-002"
+  },
+  {
+    "id": 4,
+    "title": "اكتمل الحجز",
+    "message": "تمت صيانة سيارتك بنجاح",
+    "isRead": true,
+    "createdAt": "2026-01-18T12:00:00",
+    "userId": "customer-003"
+  }
+]
