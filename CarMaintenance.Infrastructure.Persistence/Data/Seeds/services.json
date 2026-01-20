@@ -1,0 +1,20 @@
+[
+  {
+    "name": "تغيير الزيت",
+    "category": "صيانة",
+    "basePrice": 150.00,
+    "estimatedDurationMinutes": 30
+  },
+  {
+    "name": "فحص الفرامل",
+    "category": "سلامة",
+    "basePrice": 200.00,
+    "estimatedDurationMinutes": 60
+  },
+  {
+    "name": "صيانة التكييف",
+    "category": "راحة",
+    "basePrice": 350.00,
+    "estimatedDurationMinutes": 120
+  }
+]

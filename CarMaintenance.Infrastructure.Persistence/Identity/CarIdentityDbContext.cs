@@ -1,4 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Identity;
+using CarMaintenance.Infrastructure.Persistence.Common;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity
 
 
             //for Config
-            builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            builder.ApplyConfigurationsFromAssembly(typeof(CarIdentityDbContext).Assembly,
+                type => type.GetCustomAttribute<DbContextTypeAttribute>()?.DbContextType == typeof(CarIdentityDbContext));
+
 
         }
 
