@@ -1,5 +1,5 @@
-﻿using CarMaintenance.Core.Domain.Models.Identity;
-using CarMaintenance.Infrastructure.Persistence.Identity;
+﻿using CarMaintenance.Core.Domain.Models.Data;
+using CarMaintenance.Infrastructure.Persistence.Data;
 using CarMaintenance.Shared.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -26,7 +26,7 @@ namespace CarMaintenance.APIs.Extensions
                 identityOptions.Lockout.MaxFailedAccessAttempts = 5;
                 identityOptions.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             })
-            .AddEntityFrameworkStores<CarIdentityDbContext>()
+            .AddEntityFrameworkStores<CarDbContext>()
             .AddDefaultTokenProviders();
 
 

@@ -13,6 +13,7 @@ namespace CarMaintenance.Core.Domain.Models.Data
         public string UserId { get; set; } = null!;
 
         // Navigation Properties
+        public ApplicationUser Owner { get; set; } = null!;
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     }
 }

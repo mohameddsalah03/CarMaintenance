@@ -1,12 +1,12 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-using CarMaintenance.Infrastructure.Persistence.Common;
+
 using CarMaintenance.Infrastructure.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
 {
-        [DbContextType(typeof(CarDbContext))]
+       
     public class BookingConfiguration : IEntityTypeConfiguration<Booking>
     {
         public void Configure(EntityTypeBuilder<Booking> builder)
@@ -45,7 +45,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
                 .IsRequired();
 
             builder.Property(b => b.UserId)
-                .HasMaxLength(500)
+                .HasMaxLength(450)
                 .IsRequired();
 
             builder.Property(b => b.VehicleId)
@@ -91,6 +91,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
                 .HasForeignKey<Review>(r => r.BookingId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
+
+            builder.HasOne(b => b.User)
+            .WithMany(u => u.Bookings)
+            .HasForeignKey(b => b.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

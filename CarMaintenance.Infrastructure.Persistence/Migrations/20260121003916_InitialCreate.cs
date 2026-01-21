@@ -3,31 +3,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
+namespace CarMaintenance.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class initIdentity : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "Notifications",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Notifications", x => x.Id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
@@ -59,25 +42,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Technicians",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Specialization = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false, defaultValue: 0m),
-                    IsAvailable = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Technicians", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DisplayName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     RefreshTokenExpiryTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -101,20 +70,47 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Vehicles",
+                name: "Notifications",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Model = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Brand = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Year = table.Column<int>(type: "int", nullable: false),
-                    PlateNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Vehicles", x => x.Id);
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Technicians",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Specialization = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false, defaultValue: 0m),
+                    IsAvailable = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Technicians", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Technicians_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -142,33 +138,62 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Booking",
+                name: "Vehicles",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    BookingNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ScheduledDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    TotalCost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    PaymentStatus = table.Column<int>(type: "int", nullable: false),
-                    PaymentMethod = table.Column<int>(type: "int", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    VehicleId = table.Column<int>(type: "int", nullable: false),
-                    TechnicianId = table.Column<string>(type: "nvarchar(500)", nullable: true)
+                    Model = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Brand = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Year = table.Column<int>(type: "int", nullable: false),
+                    PlateNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Booking", x => x.Id);
+                    table.PrimaryKey("PK_Vehicles", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Booking_Technicians_TechnicianId",
+                        name: "FK_Vehicles_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Bookings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BookingNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ScheduledDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    TotalCost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PaymentStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
+                    VehicleId = table.Column<int>(type: "int", nullable: false),
+                    TechnicianId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Bookings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Bookings_Technicians_TechnicianId",
                         column: x => x.TechnicianId,
                         principalTable: "Technicians",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Booking_Vehicles_VehicleId",
+                        name: "FK_Bookings_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Bookings_Vehicles_VehicleId",
                         column: x => x.VehicleId,
                         principalTable: "Vehicles",
                         principalColumn: "Id",
@@ -190,9 +215,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 {
                     table.PrimaryKey("PK_AdditionalIssues", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AdditionalIssues_Booking_BookingId",
+                        name: "FK_AdditionalIssues_Bookings_BookingId",
                         column: x => x.BookingId,
-                        principalTable: "Booking",
+                        principalTable: "Bookings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -210,9 +235,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 {
                     table.PrimaryKey("PK_BookingServices", x => new { x.BookingId, x.ServiceId });
                     table.ForeignKey(
-                        name: "FK_BookingServices_Booking_BookingId",
+                        name: "FK_BookingServices_Bookings_BookingId",
                         column: x => x.BookingId,
-                        principalTable: "Booking",
+                        principalTable: "Bookings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -232,7 +257,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                     Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false),
                     Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     TechnicianId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     BookingId = table.Column<int>(type: "int", nullable: false)
                 },
@@ -240,15 +265,21 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 {
                     table.PrimaryKey("PK_Reviews", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Reviews_Booking_BookingId",
+                        name: "FK_Reviews_Bookings_BookingId",
                         column: x => x.BookingId,
-                        principalTable: "Booking",
+                        principalTable: "Bookings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Reviews_Technicians_TechnicianId",
                         column: x => x.TechnicianId,
                         principalTable: "Technicians",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -259,13 +290,24 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 column: "BookingId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Booking_TechnicianId",
-                table: "Booking",
+                name: "IX_Bookings_BookingNumber",
+                table: "Bookings",
+                column: "BookingNumber",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bookings_TechnicianId",
+                table: "Bookings",
                 column: "TechnicianId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Booking_VehicleId",
-                table: "Booking",
+                name: "IX_Bookings_UserId",
+                table: "Bookings",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bookings_VehicleId",
+                table: "Bookings",
                 column: "VehicleId");
 
             migrationBuilder.CreateIndex(
@@ -310,6 +352,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 name: "IX_Technicians_Id",
                 table: "Technicians",
                 column: "Id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Technicians_UserId",
+                table: "Technicians",
+                column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -363,19 +411,19 @@ namespace CarMaintenance.Infrastructure.Persistence.Identity.Migrations
                 name: "Services");
 
             migrationBuilder.DropTable(
-                name: "Booking");
+                name: "Bookings");
 
             migrationBuilder.DropTable(
                 name: "Roles");
-
-            migrationBuilder.DropTable(
-                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Technicians");
 
             migrationBuilder.DropTable(
                 name: "Vehicles");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }

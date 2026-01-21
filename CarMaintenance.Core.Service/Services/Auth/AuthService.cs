@@ -1,4 +1,4 @@
-﻿using CarMaintenance.Core.Domain.Models.Identity;
+﻿using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth.Email;
 using CarMaintenance.Shared.DTOs.Auth;

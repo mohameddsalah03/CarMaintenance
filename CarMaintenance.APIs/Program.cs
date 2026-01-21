@@ -79,8 +79,7 @@ namespace CarMaintenance.APIs
 
             var app = builder.Build();
 
-            // Initialize Databases
-            await app.InitializeDbContextAsync();
+            
 
             #region Configure Kestral Middlewares (Pipelines)
 
