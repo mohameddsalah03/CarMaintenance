@@ -1,5 +1,4 @@
 ﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
-using CarMaintenance.Core.Domain.Contracts.Persistence.DbInitializers;
 using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Infrastructure.Persistence.Data;
 using CarMaintenance.Infrastructure.Persistence.Repos;
@@ -19,7 +18,7 @@ namespace CarMaintenance.Infrastructure.Persistence
            
             
             services.AddScoped(typeof(IUnitOfWork), typeof(UnitOfWork));
-
+            services.AddScoped<IDataSeeding, DataSeeding>();
 
             #region IdentityContext And IdentityInitializer
 
