@@ -1,20 +1,10 @@
 [
   {
-    "id": 1,
-    "rating": 5.00,
-    "comment": "خدمة ممتازة وسريعة جداً",
-    "createdAt": "2026-01-19T15:30:00",
-    "userId": "customer-001",
-    "technicianId": "tech-001",
-    "bookingId": 1
-  },
-  {
-    "id": 2,
-    "rating": 4.50,
-    "comment": "شغل جيد لكن كان فيه تأخير بسيط",
-    "createdAt": "2026-01-19T16:00:00",
-    "userId": "customer-003",
-    "technicianId": "tech-002",
-    "bookingId": 3
+    "Rating": 5.00,
+    "Comment": "خدمة ممتازة وسريعة جداً",
+    "CreatedAt": "2026-01-19T15:30:00",
+    "UserId": "9aa803f4-3c24-49a7-bffa-22e0a5d7c1bf",
+    "TechnicianId": "b5e7b1c0-2b79-423b-af2a-757aa503af30",
+    "BookingId": 2
   }
 ]

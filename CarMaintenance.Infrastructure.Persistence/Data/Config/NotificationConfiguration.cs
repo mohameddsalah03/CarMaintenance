@@ -15,6 +15,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.ToTable("Notifications");
 
             // Properties
+            builder.Property(E => E.Id)
+                   .ValueGeneratedOnAdd();
+
             builder.Property(n => n.Title)
                 .HasMaxLength(200)
                 .HasColumnType("nvarchar")

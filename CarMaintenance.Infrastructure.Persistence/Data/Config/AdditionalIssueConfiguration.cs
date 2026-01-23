@@ -14,6 +14,8 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.ToTable("AdditionalIssues");
 
             // Properties
+            builder.Property(E => E.Id)
+                   .ValueGeneratedOnAdd();
             builder.Property(ai => ai.Title)
                 .HasMaxLength(300)
                 .HasColumnType("nvarchar")

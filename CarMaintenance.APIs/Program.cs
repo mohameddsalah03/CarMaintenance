@@ -1,6 +1,5 @@
 ﻿using CarMaintenance.APIs.Extensions;
 using CarMaintenance.APIs.Middlewares;
-using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Service;
 using CarMaintenance.Infrastructure.Persistence;
 using Microsoft.OpenApi.Models;
@@ -80,9 +79,16 @@ namespace CarMaintenance.APIs
 
             var app = builder.Build();
 
-            var scope = app.Services.CreateScope();
-            var seed = scope.ServiceProvider.GetRequiredService<IDataSeeding>();
-            await seed.DataSeedAsync();
+            #region Database Initializer 
+
+            //var scope = app.Services.CreateScope();
+            //var seed = scope.ServiceProvider.GetRequiredService<IDataSeeding>();
+            //await seed.DataSeedAsync();
+
+
+            await app.InitializeDbContext();
+
+            #endregion
 
             #region Configure Kestral Middlewares (Pipelines)
 

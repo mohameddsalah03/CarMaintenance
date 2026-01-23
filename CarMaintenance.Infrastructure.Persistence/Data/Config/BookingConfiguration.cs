@@ -1,5 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-
+using CarMaintenance.Core.Domain.Models.Data.Enums;
 using CarMaintenance.Infrastructure.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,6 +12,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
         public void Configure(EntityTypeBuilder<Booking> builder)
         {
             builder.ToTable("Bookings");
+
+
+            builder.Property(E => E.Id)
+                   .ValueGeneratedOnAdd();
 
             builder.Property(b => b.BookingNumber)
                 .HasMaxLength(50)
@@ -29,19 +33,26 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
                 .HasColumnType("decimal(18,2)")
                 .IsRequired();
 
+            // To Store String Not Int in DB
             builder.Property(b => b.Status)
-                .HasConversion<string>()
-                .HasMaxLength(50)
+                .HasColumnType("nvarchar(50)")
+                .HasConversion(
+                    status => status.ToString(),
+                    status => Enum.Parse<BookingStatus>(status, true))
                 .IsRequired();
 
             builder.Property(b => b.PaymentStatus)
-                .HasConversion<string>()
-                .HasMaxLength(50)
+                .HasColumnType("nvarchar(50)")
+                .HasConversion(
+                    status => status.ToString(),
+                    status => Enum.Parse<PaymentStatus>(status, true))
                 .IsRequired();
 
             builder.Property(b => b.PaymentMethod)
-                .HasConversion<string>()
-                .HasMaxLength(50)
+                .HasColumnType("nvarchar(50)")
+                .HasConversion(
+                    method => method.ToString(),
+                    method => Enum.Parse<PaymentMethod>(method, true))
                 .IsRequired();
 
             builder.Property(b => b.UserId)

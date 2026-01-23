@@ -15,6 +15,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.ToTable("Services");
 
             // Properties
+            builder.Property(E => E.Id)
+                   .ValueGeneratedOnAdd();
+
             builder.Property(s => s.Name)
                 .HasMaxLength(200)
                 .HasColumnType("nvarchar")

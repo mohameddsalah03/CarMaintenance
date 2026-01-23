@@ -1,5 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-
+using CarMaintenance.Core.Domain.Models.Data.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,11 +21,15 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.Property(bs => bs.Duration)
                 .IsRequired();
 
-            builder.Property(bs => bs.Status)
-                .HasConversion<string>()
-                .HasMaxLength(50)
+            // الطريقة الأفضل (أكثر وضوحاً)
+            builder.Property(b => b.Status)
+                .HasColumnType("nvarchar(50)")
+                .HasConversion(
+                    status => status.ToString(),
+                    status => Enum.Parse<BookingStatus>(status, true))
                 .IsRequired();
 
+           
             // Relationships
             // BookingService -> Booking (Many-to-One)
             builder.HasOne(bs => bs.Booking)

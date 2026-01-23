@@ -2,14 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CarMaintenance.Infrastructure.Persistence.Data
 {
@@ -20,18 +13,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             
         }
-        public DbSet<AdditionalIssue> AdditionalIssues  { get; set; }
-        public DbSet<Booking> Bookings { get; set; }
-        public DbSet<BookingService> BookingServices { get; set; }
-        public DbSet<Notification> Notifications { get; set; }
-        public DbSet<Review> Reviews { get; set; }
-        public DbSet<Service> Services { get; set; }
-        public DbSet<Technician> Technicians { get; set; }
-        public DbSet<Vehicle> Vehicles { get; set; }
-
-
-
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -45,6 +26,18 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
+        public DbSet<AdditionalIssue> AdditionalIssues  { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<BookingService> BookingServices { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+        public DbSet<Service> Services { get; set; }
+        public DbSet<Technician> Technicians { get; set; }
+        public DbSet<Vehicle> Vehicles { get; set; }
+
+
+
+
 
     }
 }

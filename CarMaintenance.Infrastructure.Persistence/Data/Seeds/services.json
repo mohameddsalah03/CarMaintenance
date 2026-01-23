@@ -1,20 +1,20 @@
 [
   {
-    "name": "تغيير الزيت",
-    "category": "صيانة",
-    "basePrice": 150.00,
-    "estimatedDurationMinutes": 30
+    "Name": "تغيير الزيت",
+    "Category": "صيانة",
+    "BasePrice": 150.00,
+    "EstimatedDurationMinutes": 30
   },
   {
-    "name": "فحص الفرامل",
-    "category": "سلامة",
-    "basePrice": 200.00,
-    "estimatedDurationMinutes": 60
+    "Name": "فحص الفرامل",
+    "Category": "سلامة",
+    "BasePrice": 200.00,
+    "EstimatedDurationMinutes": 60
   },
   {
-    "name": "صيانة التكييف",
-    "category": "راحة",
-    "basePrice": 350.00,
-    "estimatedDurationMinutes": 120
+    "Name": "صيانة التكييف",
+    "Category": "راحة",
+    "BasePrice": 350.00,
+    "EstimatedDurationMinutes": 120
   }
 ]

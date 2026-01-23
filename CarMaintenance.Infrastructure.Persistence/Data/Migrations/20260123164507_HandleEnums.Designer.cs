@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace CarMaintenance.Infrastructure.Persistence.Migrations
+namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 {
     [DbContext(typeof(CarDbContext))]
-    [Migration("20260121003916_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260123164507_HandleEnums")]
+    partial class HandleEnums
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -151,12 +151,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("PaymentStatus")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("ScheduledDate")
@@ -164,7 +162,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("TechnicianId")

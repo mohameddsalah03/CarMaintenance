@@ -1,23 +1,14 @@
 [
   {
-    "id": 1,
-    "title": "تسريب زيت بسيط",
-    "estimatedCost": 200.00,
-    "isApproved": true,
-    "bookingId": 1
+    "Title": "تسريب زيت بسيط",
+    "EstimatedCost": 200.00,
+    "IsApproved": true,
+    "BookingId": 2
   },
   {
-    "id": 2,
-    "title": "استبدال فلتر الهواء",
-    "estimatedCost": 80.00,
-    "isApproved": true,
-    "bookingId": 3
-  },
-  {
-    "id": 3,
-    "title": "تغيير سير المروحة",
-    "estimatedCost": 150.00,
-    "isApproved": false,
-    "bookingId": 2
+    "Title": "استبدال فلتر الهواء",
+    "EstimatedCost": 80.00,
+    "IsApproved": true,
+    "BookingId": 2
   }
 ]
