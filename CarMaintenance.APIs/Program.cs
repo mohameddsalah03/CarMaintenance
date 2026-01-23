@@ -9,7 +9,7 @@ namespace CarMaintenance.APIs
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -27,9 +27,6 @@ namespace CarMaintenance.APIs
 
             //Reauired Services For Swagger
             builder.Services.AddEndpointsApiExplorer();
-
-
-
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
@@ -39,7 +36,7 @@ namespace CarMaintenance.APIs
                     Description = "Car Maintenance Platform - Graduation Project",
                     Contact = new OpenApiContact
                     {
-                        Name = "Graduation FIX'EM"
+                        Name = "Graduation FIXORA"
                     }
                 });
 
@@ -82,6 +79,16 @@ namespace CarMaintenance.APIs
 
             var app = builder.Build();
 
+            #region Database Initializer 
+
+            //var scope = app.Services.CreateScope();
+            //var seed = scope.ServiceProvider.GetRequiredService<IDataSeeding>();
+            //await seed.DataSeedAsync();
+
+
+            await app.InitializeDbContext();
+
+            #endregion
 
             #region Configure Kestral Middlewares (Pipelines)
 

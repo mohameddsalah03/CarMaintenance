@@ -1,6 +1,7 @@
-﻿using CarMaintenance.APIs.Controllers.Errors;
+﻿using CarMaintenance.Shared.DTOs.Auth;
 using CarMaintenance.Shared.Exceptions;
-using System.Text.Json;
+
+
 
 namespace CarMaintenance.APIs.Middlewares
 {
@@ -8,77 +9,70 @@ namespace CarMaintenance.APIs.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ExceptionHandlerMiddleware> _logger;
-        private readonly IWebHostEnvironment _environment;
 
-        public ExceptionHandlerMiddleware(
-            RequestDelegate next,
-            ILogger<ExceptionHandlerMiddleware> logger,
-            IWebHostEnvironment environment)
+        public ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionHandlerMiddleware> logger)
         {
             _next = next;
             _logger = logger;
-            _environment = environment;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
             try
             {
-                await _next(context);
+                await _next.Invoke(context);
+
+                // Handle explicit 404 responses (when endpoint exists but returns 404)
+                await HandleNotFoundEndPoint(context);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred: {Message}", ex.Message);
+                _logger.LogError(ex, "Unhandled exception caught by middleware");
                 await HandleExceptionAsync(context, ex);
             }
         }
 
-
-        private async Task HandleExceptionAsync(HttpContext context, Exception ex)
+        private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
+            if (context.Response.HasStarted)
+            {
+                // Cannot write to response - just log and return
+                return;
+            }
+
+            context.Response.Clear();
             context.Response.ContentType = "application/json";
-
-            ApiResponse response = ex switch
+            context.Response.StatusCode = ex switch
             {
-                ValidationException validationEx => new ApiValidationErrorResponse(
-                    validationEx.Message,
-                    validationEx.Errors 
-                ),
-                NotFoundException notFoundEx => new ApiResponse(
-                    StatusCodes.Status404NotFound,
-                    notFoundEx.Message
-                ),
-                UnauthorizedException unauthorizedEx => new ApiResponse(
-                    StatusCodes.Status401Unauthorized,
-                    unauthorizedEx.Message
-                ),
-                BadRequestException badRequestEx => new ApiResponse(
-                    StatusCodes.Status400BadRequest,
-                    badRequestEx.Message
-                ),
-                _ => _environment.IsDevelopment()
-                    ? new ApiExceptionResponse(
-                        StatusCodes.Status500InternalServerError,
-                        ex.Message,
-                        ex.StackTrace?.ToString()
-                    )
-                    : new ApiExceptionResponse(
-                        StatusCodes.Status500InternalServerError,
-                        "An internal server error occurred."
-                    )
+                NotFoundException => StatusCodes.Status404NotFound,
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                BadRequestException => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status500InternalServerError,
             };
 
-            context.Response.StatusCode = response.StatusCode;
-
-            var options = new JsonSerializerOptions
+            var response = new ErrorToReturn
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = _environment.IsDevelopment()
+                StatusCode = context.Response.StatusCode,
+                ErrorMessage = ex.Message
             };
 
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(response, options)
-            );
+            await context.Response.WriteAsJsonAsync(response);
+        }
+
+        private static async Task HandleNotFoundEndPoint(HttpContext context)
+        {
+            if (context.Response.HasStarted) return;
+
+            if (context.Response.StatusCode == StatusCodes.Status404NotFound)
+            {
+                context.Response.ContentType = "application/json";
+                var response = new ErrorToReturn
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = $"End Point {context.Request.Path} is Not Found"
+                };
+                await context.Response.WriteAsJsonAsync(response);
+            }
         }
     }
 }

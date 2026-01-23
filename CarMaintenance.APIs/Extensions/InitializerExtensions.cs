@@ -1,37 +1,34 @@
-﻿//namespace CarMaintenance.APIs.Extensions
-//{
-//    public static class InitializerExtensions
-//    {
-//        // generate Object From DbInitializer Explicitly
-//        public static async Task<WebApplication> InitializeDbContext(this WebApplication app)
-//        {
-//            using var scope = app.Services.CreateAsyncScope();
-//            var services = scope.ServiceProvider;
+﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
+
+namespace CarMaintenance.APIs.Extensions
+{
+    public static class InitializerExtensions
+    {
+        // generate Object From DbInitializer Explicitly
+        public static async Task<WebApplication> InitializeDbContext(this WebApplication app)
+        {
+            using var scope = app.Services.CreateAsyncScope();
+            var services = scope.ServiceProvider;
             
-//            //var StoreContextInitializer = services.GetRequiredService<IStoreDbInitializer>();
-//            //var IdentityInitializer = services.GetRequiredService<IStoreIdentityDbInitializer>();
+            var CarContextInitializer = services.GetRequiredService<IDataSeeding>();
 
-//            var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+            var loggerFactory = services.GetRequiredService<ILoggerFactory>();
 
-//            try
-//            {
-//                //await StoreContextInitializer.InitializeAsync();
-//                //await StoreContextInitializer.SeedAsync();
+            try
+            {
+                await CarContextInitializer.InitializeAsync();
+                await CarContextInitializer.DataSeedAsync();
+            }
+            catch (Exception ex)
+            {
 
-//                //await IdentityInitializer.InitializeAsync();
-//                //await IdentityInitializer.SeedAsync();
+                var logger = loggerFactory.CreateLogger<Program>();
+                logger.LogError(ex, "An Error Has Been Occured during applying the migrations !");
 
-//            }
-//            catch (Exception ex)
-//            {
-
-//                var logger = loggerFactory.CreateLogger<Program>();
-//                logger.LogError(ex, "An Error Has Been Occured during applying the migrations !");
-
-//            }
+            }
            
-//            return app;
+            return app;
 
-//        }
-//    }
-//}
+        }
+    }
+}

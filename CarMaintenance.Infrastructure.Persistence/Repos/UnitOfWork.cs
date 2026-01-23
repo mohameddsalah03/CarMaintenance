@@ -1,6 +1,6 @@
 ﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Domain.Models.Base;
-using CarMaintenance.Infrastructure.Persistence.Contexts;
+using CarMaintenance.Infrastructure.Persistence.Data;
 
 namespace CarMaintenance.Infrastructure.Persistence.Repos
 {
