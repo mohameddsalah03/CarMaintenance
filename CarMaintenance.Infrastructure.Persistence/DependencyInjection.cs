@@ -1,8 +1,8 @@
 ﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
-using CarMaintenance.Core.Domain.Contracts.Persistence.DbInitializers;
+using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Infrastructure.Persistence.Data;
-using CarMaintenance.Infrastructure.Persistence.Identity;
 using CarMaintenance.Infrastructure.Persistence.Repos;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,27 +16,24 @@ namespace CarMaintenance.Infrastructure.Persistence
         {
             
            
-            //
+            
             services.AddScoped(typeof(IUnitOfWork), typeof(UnitOfWork));
-
+            services.AddScoped<IDataSeeding, DataSeeding>();
 
             #region IdentityContext And IdentityInitializer
 
-            services.AddDbContext<CarIdentityDbContext>(options =>
-            {
-                options.UseSqlServer(configuration.GetConnectionString("IdentityContext"));
-            });
+           
 
             services.AddDbContext<CarDbContext>(options =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("MainContext"));
             });
 
-            // Register DbInitializers
-            services.AddScoped<ICarIdentityDbInitializer, CarIdentityDbInitializer>();
-            services.AddScoped<ICarDbInitializer, CarDbInitializer>();
+            services.AddIdentityCore<ApplicationUser>()
+                    .AddRoles<IdentityRole>()
+                    .AddEntityFrameworkStores<CarDbContext>();
 
-            
+
             #endregion
 
 

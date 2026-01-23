@@ -1,12 +1,12 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-using CarMaintenance.Infrastructure.Persistence.Common;
-using CarMaintenance.Infrastructure.Persistence.Identity;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Reflection.Emit;
 
 namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 {
-    [DbContextType(typeof(CarIdentityDbContext))]
+   
 
     public class TechnicianConfiguration : IEntityTypeConfiguration<Technician>
     {
@@ -54,6 +54,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasForeignKey(r => r.TechnicianId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+            builder.HasOne(t => t.User)
+            .WithOne()
+            .HasForeignKey<Technician>(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
 }

@@ -19,9 +19,10 @@ public class Booking : BaseEntity<int>
     public string? TechnicianId { get; set; } // Optional (nullable)
 
     // Navigation Properties
-    public Vehicle Vehicle { get; set; } = null!; // Mandatory
-    public Technician? AssignedTechnician { get; set; } // Optional
+    public ApplicationUser User { get; set; } = null!;
+    public Vehicle Vehicle { get; set; } = null!;
+    public Technician? AssignedTechnician { get; set; }
     public ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
     public ICollection<AdditionalIssue> AdditionalIssues { get; set; } = new List<AdditionalIssue>();
-    public Review? Review { get; set; } // Optional (One-to-One)
+    public Review? Review { get; set; }
 }

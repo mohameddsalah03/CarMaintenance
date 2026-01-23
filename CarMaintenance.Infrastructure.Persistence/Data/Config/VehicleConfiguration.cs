@@ -1,12 +1,11 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-using CarMaintenance.Infrastructure.Persistence.Common;
-using CarMaintenance.Infrastructure.Persistence.Identity;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 {
-    [DbContextType(typeof(CarIdentityDbContext))]
+    
 
     public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
     {
@@ -34,7 +33,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .IsRequired();
 
             builder.Property(v => v.UserId)
-                .HasMaxLength(500)
+                .HasMaxLength(450)
                 .IsRequired();
 
             // Indexes
@@ -50,6 +49,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasForeignKey(b => b.VehicleId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+
+            builder.HasOne(v => v.Owner)
+            .WithMany(u => u.Vehicles)
+            .HasForeignKey(v => v.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

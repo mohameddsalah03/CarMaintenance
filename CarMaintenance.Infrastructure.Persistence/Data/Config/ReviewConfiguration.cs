@@ -1,12 +1,10 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-using CarMaintenance.Infrastructure.Persistence.Common;
-using CarMaintenance.Infrastructure.Persistence.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 {
-    [DbContextType(typeof(CarIdentityDbContext))]
+    
 
     public class ReviewConfiguration : IEntityTypeConfiguration<Review>
     {
@@ -29,7 +27,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .IsRequired();
 
             builder.Property(r => r.UserId)
-                .HasMaxLength(500)
+                .HasMaxLength(450)
                 .IsRequired();
 
             builder.Property(r => r.TechnicianId)
@@ -60,6 +58,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasForeignKey(r => r.TechnicianId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+
+            builder.HasOne(r => r.User)
+            .WithMany(u => u.ReviewsWritten)
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

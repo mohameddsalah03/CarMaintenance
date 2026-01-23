@@ -14,9 +14,8 @@ namespace CarMaintenance.Core.Domain.Models.Data
         public int BookingId { get; set; }
 
         // Navigation Properties
-        public Booking Booking { get; set; } = null!;
+        public ApplicationUser User { get; set; } = null!;
         public Technician Technician { get; set; } = null!;
-        // ✅ Add this
-        // Note: Can't add direct navigation to ApplicationUser due to different DbContexts
+        public Booking Booking { get; set; } = null!;
     }
 }

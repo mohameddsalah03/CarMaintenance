@@ -1,13 +1,15 @@
 ﻿using CarMaintenance.APIs.Controllers.Controllers.Base;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Shared.DTOs.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace CarMaintenance.APIs.Controllers.Controllers.Account
 {
     public class AccountController(IAuthService _authService) : BaseApiController
     {
-
+        [AllowAnonymous]
         [HttpPost("Login")] //Post: /api/account/Login
         public async Task<ActionResult<UserDto>> Login(LoginDto model)
         {
@@ -15,16 +17,15 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(user);
         }
 
+        [AllowAnonymous]
         [HttpPost("Register")] //Post: /api/account/Register
-
         public async Task<ActionResult<UserDto>> Register(RegisterDto model)
         {
             var user = await _authService.RegisterAsync(model);
             return Ok(user);
         }
 
-
-
+        [AllowAnonymous]
         [HttpGet("EmailExists")] //Get: /api/account/EmailExists?email= ahmed.gmail.com
         public async Task<ActionResult<bool>> CheckEmailExists(string email)
         {
@@ -32,7 +33,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(result);
         }
 
-
+        [AllowAnonymous]
         [HttpPost("google-login")]
         public async Task<ActionResult<UserDto>> GoogleLogin(GoogleLoginDto model)
         {
@@ -40,6 +41,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(user);
         }
 
+        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<ActionResult> ForgotPassword(ForgotPasswordDto model)
         {
@@ -47,6 +49,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(new { message = "إذا كان البريد الإلكتروني موجوداً، سيتم إرسال رابط إعادة تعيين كلمة المرور" });
         }
 
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<ActionResult> ResetPassword(ResetPasswordDto model)
         {
@@ -54,13 +57,12 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(new { message = "تم إعادة تعيين كلمة المرور بنجاح" });
         }
 
+        [AllowAnonymous]
         [HttpPost("refresh-token")]
         public async Task<ActionResult<UserDto>> RefreshToken(RefreshTokenDto model)
         {
             var user = await _authService.RefreshTokenAsync(model);
             return Ok(user);
         }
-
-
     }
 }

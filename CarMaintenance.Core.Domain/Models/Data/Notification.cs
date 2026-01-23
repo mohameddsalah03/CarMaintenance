@@ -11,5 +11,6 @@ namespace CarMaintenance.Core.Domain.Models.Data
 
         // Foreign Key
         public string UserId { get; set; } = null!;
+        public ApplicationUser User { get; set; } = null!;
     }
 }

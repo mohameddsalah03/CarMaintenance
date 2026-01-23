@@ -1,12 +1,11 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-using CarMaintenance.Infrastructure.Persistence.Common;
-using CarMaintenance.Infrastructure.Persistence.Identity;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 {
-    [DbContextType(typeof(CarIdentityDbContext))]
+   
 
     public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
     {
@@ -34,7 +33,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .IsRequired();
 
             builder.Property(n => n.UserId)
-                .HasMaxLength(500)
+                .HasMaxLength(450)
                 .IsRequired();
 
             // Indexes
