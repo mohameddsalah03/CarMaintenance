@@ -1,32 +1,8 @@
 [
   {
-    "bookingId": 1,
-    "serviceId": 1,
-    "duration": 30,
-    "status": "Completed"
-  },
-  {
-    "bookingId": 1,
-    "serviceId": 2,
-    "duration": 60,
-    "status": "Completed"
-  },
-  {
-    "bookingId": 2,
-    "serviceId": 3,
-    "duration": 120,
-    "status": "Pending"
-  },
-  {
-    "bookingId": 2,
-    "serviceId": 5,
-    "duration": 90,
-    "status": "Pending"
-  },
-  {
-    "bookingId": 3,
-    "serviceId": 1,
-    "duration": 35,
-    "status": "Completed"
+    "BookingId": 2,
+    "ServiceId": 1,
+    "Duration": 30,
+    "Status": 0
   }
 ]

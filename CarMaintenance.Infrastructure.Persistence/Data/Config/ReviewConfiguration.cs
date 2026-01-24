@@ -14,6 +14,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.ToTable("Reviews");
 
             // Properties
+            builder.Property(E => E.Id)
+                   .ValueGeneratedOnAdd();
+
             builder.Property(r => r.Rating)
                 .HasColumnType("decimal(3,2)")
                 .IsRequired();

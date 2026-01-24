@@ -5,6 +5,6 @@
         Pending,
         InProgress,
         Completed,
-        Cancelled
+        Cancelled,
     }
 }
