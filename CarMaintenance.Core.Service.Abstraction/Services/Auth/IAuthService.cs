@@ -12,8 +12,11 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Auth
         Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
 
 
-        // ✅ إضافة Refresh Token method
+        //  إضافة Refresh Token method
         Task<UserDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
+
+        //  Admin Only
+        Task<UserDto> CreateTechnicianAsync(CreateTechnicianDto technicianDto);
 
     }
 }

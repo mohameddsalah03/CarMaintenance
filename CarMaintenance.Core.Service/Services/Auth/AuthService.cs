@@ -1,10 +1,12 @@
-﻿using CarMaintenance.Core.Domain.Models.Data;
+﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
+using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth.Email;
 using CarMaintenance.Shared.DTOs.Auth;
 using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
 using Google.Apis.Auth;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -21,7 +23,8 @@ namespace CarMaintenance.Core.Service.Services.Auth
         SignInManager<ApplicationUser> _signInManager,
         IOptions<JwtSettings> _jwtSettings,
         IEmailService _emailService,
-        IOptions<AppSettings> _appSettings 
+        IOptions<AppSettings> _appSettings ,
+        IUnitOfWork _unitOfWork
         ) : IAuthService
     {
         private readonly JwtSettings _jwtSettings = _jwtSettings.Value;
@@ -79,6 +82,8 @@ namespace CarMaintenance.Core.Service.Services.Auth
                     result.Errors.Select(e => e.Description)
                 );
             }
+            // adding role for customer after register 
+            await _userManager.AddToRoleAsync(user, "Customer");
 
             //  Generate both tokens
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);
@@ -127,6 +132,9 @@ namespace CarMaintenance.Core.Service.Services.Auth
                         );
                     }
                 }
+
+                // adding role for customer after register 
+                await _userManager.AddToRoleAsync(user, "Customer");
 
                 //  Generate both tokens
                 var (accessToken, refreshToken) = await GenerateTokensAsync(user);
@@ -307,6 +315,73 @@ namespace CarMaintenance.Core.Service.Services.Auth
             };
         }
 
+        public async Task<UserDto> CreateTechnicianAsync(CreateTechnicianDto technicianDto)
+        {
+            // 1. Create User Account
+            var user = new ApplicationUser()
+            {
+                DisplayName = technicianDto.DisplayName,
+                Email = technicianDto.Email,
+                UserName = technicianDto.UserName,
+                PhoneNumber = technicianDto.PhoneNumber,
+            };
 
+            var result = await _userManager.CreateAsync(user, technicianDto.Password);
+
+            if (!result.Succeeded)
+            {
+                throw new ValidationException(
+                    "Failed to create technician account",
+                    result.Errors.Select(e => e.Description)
+                );
+            }
+
+            // 2. Assign Technician Role
+            await _userManager.AddToRoleAsync(user, "Technician");
+            
+            // 3. Create Technician Record
+            var technician = new Technician()
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserId = user.Id,
+                Specialization = technicianDto.Specialization,
+                Rating = 0,
+                IsAvailable = true
+            };
+
+            await _unitOfWork.GetRepo<Technician, string>().AddAsync(technician);
+            await _unitOfWork.SaveChangesAsync();
+
+            // 4. Send Email with Login Credentials
+            var emailBody = $@"
+                <h2>مرحباً {user.DisplayName}</h2>
+                <p>تم إنشاء حساب فني صيانة لك في نظام إدارة صيانة السيارات.</p>
+                <h3>بيانات الدخول:</h3>
+                <p><strong>البريد الإلكتروني:</strong> {user.Email}</p>
+                <p><strong>اسم المستخدم:</strong> {user.UserName}</p>
+                <p><strong>كلمة المرور:</strong> {technicianDto.Password}</p>
+                <p><strong>التخصص:</strong> {technicianDto.Specialization}</p>
+                <br>
+                <p>يرجى تسجيل الدخول وتغيير كلمة المرور من الإعدادات.</p>
+                <p>رابط تسجيل الدخول: {_appSettings.FrontendUrl}/login</p>
+            ";
+
+            await _emailService.SendEmailAsync(user.Email!, "حساب فني صيانة جديد", emailBody);
+            
+            // 5. Generate Tokens
+            var (accessToken, refreshToken) = await GenerateTokensAsync(user);
+
+            return new UserDto()
+            {
+                Id = user.Id,
+                DisplayName = user.DisplayName,
+                Email = user.Email!,
+                Token = accessToken,
+                RefreshToken = refreshToken,
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
+            };
+
+
+        }
     }
 }
