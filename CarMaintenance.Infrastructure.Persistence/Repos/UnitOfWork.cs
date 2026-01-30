@@ -8,14 +8,16 @@ namespace CarMaintenance.Infrastructure.Persistence.Repos
     {
         Dictionary<string, object> _repos = new Dictionary<string, object>();
 
-        public IGenericRepository<TEntity, Tkey> GetRepo<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>
+        public IGenericRepository<TEntity, Tkey> GetRepo<TEntity, Tkey>()
+            where TEntity : BaseEntity<Tkey>
+            where Tkey : IEquatable<Tkey>
         {
             var name = typeof(TEntity).Name;
             if (_repos.ContainsKey(name))
             {
-                return (IGenericRepository<TEntity, Tkey>) _repos[name];
+                return (IGenericRepository<TEntity, Tkey>)_repos[name];
             }
-            var repo = new GenericRepo<TEntity, Tkey>(_context);
+            var repo = new GenericRepository<TEntity, Tkey>(_context);
             _repos[name] = repo;
             return repo;
         }
