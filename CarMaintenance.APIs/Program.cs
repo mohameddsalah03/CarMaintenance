@@ -49,6 +49,25 @@ namespace CarMaintenance.APIs
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
+
+                // إضافة Security Requirement
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            },
+                            Scheme = "oauth2",
+                            Name = "Bearer",
+                            In = ParameterLocation.Header
+                        },
+                        new List<string>()
+                    }
+                });
             });
 
 
@@ -80,11 +99,6 @@ namespace CarMaintenance.APIs
             var app = builder.Build();
 
             #region Database Initializer 
-
-            //var scope = app.Services.CreateScope();
-            //var seed = scope.ServiceProvider.GetRequiredService<IDataSeeding>();
-            //await seed.DataSeedAsync();
-
 
             await app.InitializeDbContext();
 

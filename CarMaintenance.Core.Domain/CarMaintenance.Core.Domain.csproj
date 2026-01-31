@@ -16,4 +16,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.22" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CarMaintenance.Shared\CarMaintenance.Shared.csproj" />
+  </ItemGroup>
+
 </Project>
