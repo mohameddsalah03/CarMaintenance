@@ -9,7 +9,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
         public IAuthService  AuthService { get; }
         public IVehicleService  VehicleService { get; }
 
-
+        public ITechniciansService TechniciansService { get; }
 
     }
 }

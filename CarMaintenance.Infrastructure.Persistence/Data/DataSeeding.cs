@@ -11,7 +11,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         UserManager<ApplicationUser> _userManager,
         RoleManager<IdentityRole> _roleManager) : IDataSeeding
     {
-        private readonly string _seedsPath = @"..\CarMaintenance.Infrastructure.Persistence\Data\Seeds";
+        private readonly string _seedsPath = Path.Combine(AppContext.BaseDirectory, "Seeds");
 
         public async Task InitializeAsync()
         {
@@ -76,7 +76,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
             {
                 var user1 = new ApplicationUser()
                 {
-                    Id = "9aa803f4-3c24-49a7-bffa-22e0a5d7c1bf", // Fixed ID للـ Admin
+                    Id = "9aa803f4-3c24-49a7-bffa-22e0a5d7c1bf",
                     Email = "eslam@gmail.com",
                     DisplayName = "Eslam Ayman",
                     UserName = "EslamAyman",
@@ -84,7 +84,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 };
                 var user2 = new ApplicationUser()
                 {
-                    Id = "fd767dae-db14-48d6-8fc9-2d690fb441dc", // Fixed ID للـ Customer
+                    Id = "fd767dae-db14-48d6-8fc9-2d690fb441dc",
                     Email = "MoSalah@gmail.com",
                     DisplayName = "Mo Salah",
                     UserName = "MoSalah",
@@ -103,33 +103,29 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.Technicians.Any())
             {
-                try
+                var filePath = Path.Combine(_seedsPath, "technicians.json");
+                if (!File.Exists(filePath)) return;
+
+                using var stream = File.OpenRead(filePath);
+                var options = new JsonSerializerOptions
                 {
-                    var filePath = Path.Combine(_seedsPath, "technicians.json");
+                    PropertyNameCaseInsensitive = true
+                };
 
-                    using var stream = File.OpenRead(filePath);
-                    var options = new JsonSerializerOptions
+                var technicians = await JsonSerializer.DeserializeAsync<List<Technician>>(stream, options);
+
+                if (technicians != null && technicians.Any())
+                {
+                    // Assume technicians.json contains explicit Ids and valid UserId values.
+                    // Validate that referenced users exist to avoid FK violations.
+                    var userIds = _userManager.Users.Select(u => u.Id).ToHashSet();
+                    var validTechnicians = technicians.Where(t => !string.IsNullOrWhiteSpace(t.Id) && userIds.Contains(t.UserId)).ToList();
+
+                    if (validTechnicians.Any())
                     {
-                        PropertyNameCaseInsensitive = true
-                    };
-
-                    var technicians = await JsonSerializer.DeserializeAsync<List<Technician>>(stream, options);
-
-                    if (technicians != null && technicians.Any())
-                    {
-                        // ولّد Id لكل Technician
-                        foreach (var tech in technicians)
-                        {
-                            tech.Id = Guid.NewGuid().ToString();
-                        }
-
-                        await _context.Technicians.AddRangeAsync(technicians);
+                        await _context.Technicians.AddRangeAsync(validTechnicians);
                         await _context.SaveChangesAsync();
                     }
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception($"Error seeding Technicians: {ex.Message}", ex);
                 }
             }
         }
@@ -138,15 +134,18 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.Vehicles.Any())
             {
-                var vehiclesData = File.OpenRead(Path.Combine(_seedsPath, "vehicles.json"));
+                var vehiclesPath = Path.Combine(_seedsPath, "vehicles.json");
+                if (!File.Exists(vehiclesPath)) return;
+
+                using var vehiclesData = File.OpenRead(vehiclesPath);
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 };
-                var vehicles = await JsonSerializer.DeserializeAsync<List<Vehicle>>(vehiclesData);
+                var vehicles = await JsonSerializer.DeserializeAsync<List<Vehicle>>(vehiclesData, options);
 
                 if (vehicles != null && vehicles.Any())
-                {   
+                {
                     await _context.Vehicles.AddRangeAsync(vehicles);
                     await _context.SaveChangesAsync();
                 }
@@ -157,7 +156,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.Services.Any())
             {
-                var servicesData = File.OpenRead(Path.Combine(_seedsPath, "services.json"));
+                var servicesPath = Path.Combine(_seedsPath, "services.json");
+                if (!File.Exists(servicesPath)) return;
+
+                using var servicesData = File.OpenRead(servicesPath);
                 var services = await JsonSerializer.DeserializeAsync<List<Service>>(servicesData);
 
                 if (services != null && services.Any())
@@ -168,28 +170,40 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
             }
         }
 
-
         private async Task SeedBookingsAsync()
         {
             if (!_context.Bookings.Any())
             {
-                var bookingsData = File.OpenRead(Path.Combine(_seedsPath, "bookings.json"));
+                var bookingsPath = Path.Combine(_seedsPath, "bookings.json");
+                if (!File.Exists(bookingsPath)) return;
+
+                using var bookingsData = File.OpenRead(bookingsPath);
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
                     Converters =
-                {
-                    new BookingStatusJsonConverter(),
-                    new PaymentMethodJsonConverter(),
-                    new PaymentStatusJsonConverter()
-                }
+                    {
+                        new BookingStatusJsonConverter(),
+                        new PaymentMethodJsonConverter(),
+                        new PaymentStatusJsonConverter()
+                    }
                 };
                 var bookings = await JsonSerializer.DeserializeAsync<List<Booking>>(bookingsData, options);
 
                 if (bookings != null && bookings.Any())
                 {
-                    await _context.Bookings.AddRangeAsync(bookings);
-                    await _context.SaveChangesAsync();
+                    // Validate FK references: UserId, VehicleId, TechnicianId (if present)
+                    var userIds = _userManager.Users.Select(u => u.Id).ToHashSet();
+                    var vehicleIds = _context.Vehicles.Select(v => v.Id).ToHashSet();
+                    var technicianIds = _context.Technicians.Select(t => t.Id).ToHashSet();
+
+                    var validBookings = bookings.Where(b => userIds.Contains(b.UserId) && vehicleIds.Contains(b.VehicleId) && (string.IsNullOrWhiteSpace(b.TechnicianId) || technicianIds.Contains(b.TechnicianId))).ToList();
+
+                    if (validBookings.Any())
+                    {
+                        await _context.Bookings.AddRangeAsync(validBookings);
+                        await _context.SaveChangesAsync();
+                    }
                 }
             }
         }
@@ -198,7 +212,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.BookingServices.Any())
             {
-                var bookingServicesData = File.OpenRead(Path.Combine(_seedsPath, "bookingServices.json"));
+                var bookingServicesPath = Path.Combine(_seedsPath, "bookingServices.json");
+                if (!File.Exists(bookingServicesPath)) return;
+
+                using var bookingServicesData = File.OpenRead(bookingServicesPath);
 
                 var options = new JsonSerializerOptions
                 {
@@ -208,7 +225,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                         new BookingStatusJsonConverter(),
                     }
                 };
-                var bookingServices = await JsonSerializer.DeserializeAsync<List<BookingService>>(bookingServicesData);
+                var bookingServices = await JsonSerializer.DeserializeAsync<List<BookingService>>(bookingServicesData, options);
 
                 if (bookingServices != null && bookingServices.Any())
                 {
@@ -222,8 +239,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.AdditionalIssues.Any())
             {
-                var additionalIssuesData = File.OpenRead(Path.Combine(_seedsPath, "additionalIssues.json"));
-                var additionalIssues = await JsonSerializer.DeserializeAsync<List<AdditionalIssue>>(additionalIssuesData);
+                var path = Path.Combine(_seedsPath, "additionalIssues.json");
+                if (!File.Exists(path)) return;
+
+                using var data = File.OpenRead(path);
+                var additionalIssues = await JsonSerializer.DeserializeAsync<List<AdditionalIssue>>(data);
 
                 if (additionalIssues != null && additionalIssues.Any())
                 {
@@ -237,8 +257,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.Notifications.Any())
             {
-                var notificationsData = File.OpenRead(Path.Combine(_seedsPath, "notifications.json"));
-                var notifications = await JsonSerializer.DeserializeAsync<List<Notification>>(notificationsData);
+                var path = Path.Combine(_seedsPath, "notifications.json");
+                if (!File.Exists(path)) return;
+
+                using var data = File.OpenRead(path);
+                var notifications = await JsonSerializer.DeserializeAsync<List<Notification>>(data);
 
                 if (notifications != null && notifications.Any())
                 {
@@ -252,8 +275,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             if (!_context.Reviews.Any())
             {
-                var reviewsData = File.OpenRead(Path.Combine(_seedsPath, "reviews.json"));
-                var reviews = await JsonSerializer.DeserializeAsync<List<Review>>(reviewsData);
+                var path = Path.Combine(_seedsPath, "reviews.json");
+                if (!File.Exists(path)) return;
+
+                using var data = File.OpenRead(path);
+                var reviews = await JsonSerializer.DeserializeAsync<List<Review>>(data);
 
                 if (reviews != null && reviews.Any())
                 {
