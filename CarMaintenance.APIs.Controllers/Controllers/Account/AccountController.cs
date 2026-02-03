@@ -65,18 +65,5 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Account
             return Ok(user);
         }
 
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost("create-technician")] // POST: /api/Account/create-technician
-        public async Task<ActionResult<UserDto>> CreateTechnician(CreateTechnicianDto model)
-        {
-            var technician = await _authService.CreateTechnicianAsync(model);
-            return Ok(new
-            {
-                message = "تم إنشاء حساب الفني بنجاح وإرسال بيانات الدخول عبر البريد الإلكتروني",
-                data = technician
-            });
-        }
-
     }
 }

@@ -1,18 +1,18 @@
 ﻿using CarMaintenance.Shared.DTOs.Technicians;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CarMaintenance.Core.Service.Abstraction.Services
 {
     public interface ITechniciansService
     {
-        Task<IEnumerable<TechniciansDto>> GetTechniciansAsync();
+        Task<IEnumerable<TechniciansDto>> GetAllTechniciansAsync();
         Task<IEnumerable<TechniciansDto>> GetAvailableTechniciansAsync();
-        //Task<TechniciansDto> AddTechniciansAsync(TechnicianCreateDto techniciansDto);
-        Task<TechniciansDto> EditTechniciansAsync(string id, TechnicianUpdateDto techniciansDto);
-        Task RemoveTechnicianAsync(string id);
+        Task<TechniciansDto?> GetTechnicianByIdAsync(string id);
+
+        // انتقل من AuthService
+        Task<TechniciansDto> CreateTechnicianAsync(CreateTechnicianDto createDto);
+
+        Task<TechniciansDto> UpdateTechnicianAsync(string id, TechnicianUpdateDto updateDto);
+        Task DeleteTechnicianAsync(string id);
+        Task<TechniciansDto> ToggleAvailabilityAsync(string id);
     }
 }

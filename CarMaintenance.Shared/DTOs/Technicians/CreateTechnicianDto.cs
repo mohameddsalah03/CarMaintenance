@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CarMaintenance.Shared.DTOs.Auth
+namespace CarMaintenance.Shared.DTOs.Technicians
 {
     public class CreateTechnicianDto
     {

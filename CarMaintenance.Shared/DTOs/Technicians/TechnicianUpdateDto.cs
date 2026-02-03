@@ -1,30 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace CarMaintenance.Shared.DTOs.Technicians
 {
     public class TechnicianUpdateDto
     {
-        [Required]
-        public required string DisplayName { get; set; }
+        [MaxLength(200)]
+        public string? DisplayName { get; set; }
 
-        [Required]
-        public required string UserName { get; set; }
+        [MaxLength(100)]
+        public string? UserName { get; set; }
 
-        [Required]
         [EmailAddress]
-        public required string Email { get; set; }
+        public string? Email { get; set; }
 
-        [Required]
-        public required string PhoneNumber { get; set; }
-
+        [RegularExpression(@"^[0-9+\-\(\)\s]{10,20}$", ErrorMessage = "رقم الهاتف غير صحيح")]
+        public string? PhoneNumber { get; set; }
 
         [Required]
         [MaxLength(200)]
         public required string Specialization { get; set; }
+
+        public bool? IsAvailable { get; set; }
     }
 }
