@@ -1,33 +1,32 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CarMaintenance.Core.Domain.Specifications.Technicians
 {
-    public class TechnicianSpecification : BaseSpecifications<Technician,string>
+    public class TechnicianSpecification : BaseSpecifications<Technician, string>
     {
-
-
-        public TechnicianSpecification():base()
+        // Get All Technicians
+        public TechnicianSpecification() : base()
         {
             AddIncludes();
+            AddOrderByDesc(t => t.Rating);
         }
-        public TechnicianSpecification(bool isAvailable) : base(v=>v.IsAvailable == isAvailable)
+
+        // Get Available Technicians Only
+        public TechnicianSpecification(bool isAvailable) : base(t => t.IsAvailable == isAvailable)
         {
             AddIncludes();
+            AddOrderByDesc(t => t.Rating);
         }
-        public TechnicianSpecification(string id,string userId) : base(
-            v=> v.Id == id && v.UserId == userId)
+
+        // Get Technician by ID
+        public TechnicianSpecification(string id) : base(id)
         {
             AddIncludes();
         }
 
         protected override void AddIncludes()
         {
-            Includes.Add(v => v.User);
+            Includes.Add(t => t.User);
         }
     }
 }

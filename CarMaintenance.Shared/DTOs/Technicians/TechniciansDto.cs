@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CarMaintenance.Shared.DTOs.Technicians
+﻿namespace CarMaintenance.Shared.DTOs.Technicians
 {
     public class TechniciansDto
     {
@@ -12,9 +6,9 @@ namespace CarMaintenance.Shared.DTOs.Technicians
         public string Specialization { get; set; } = null!;
         public decimal Rating { get; set; }
         public bool IsAvailable { get; set; }
-        public string UserId { get; set; } = null!;
 
-        // معلومات الـ User
+        // User Info
+        public string UserId { get; set; } = null!;
         public string UserName { get; set; } = null!;
         public string DisplayName { get; set; } = null!;
         public string Email { get; set; } = null!;

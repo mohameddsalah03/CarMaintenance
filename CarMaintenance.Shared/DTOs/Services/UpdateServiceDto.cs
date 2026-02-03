@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace CarMaintenance.Shared.DTOs.Services
 {
     public class UpdateServiceDto
     {
+        [JsonIgnore]
         public int Id { get; set; }
 
         [Required(ErrorMessage = "اسم الخدمة مطلوب")]
