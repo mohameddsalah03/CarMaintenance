@@ -9,10 +9,6 @@ namespace CarMaintenance.Core.Domain.Models.Data
         public bool IsAvailable { get; set; }
         public string UserId { get; set; } = null!; // FK to User
 
-        //
-        //public string UserId { get; set; } = null!; // FK to User
-
-
         // Navigation Properties
         public ApplicationUser User { get; set; } = null!;
         public ICollection<Review> ReviewsReceived { get; set; } = new List<Review>();
