@@ -15,8 +15,5 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Auth
         //  إضافة Refresh Token method
         Task<UserDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
 
-        //  Admin Only
-        Task<UserDto> CreateTechnicianAsync(CreateTechnicianDto technicianDto);
-
     }
 }
