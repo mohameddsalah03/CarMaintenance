@@ -1,6 +1,9 @@
-﻿using CarMaintenance.Shared.DTOs.Auth;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using CarMaintenance.Shared.DTOs.Auth;
 using CarMaintenance.Shared.Exceptions;
-
 
 
 namespace CarMaintenance.APIs.Middlewares
@@ -22,8 +25,8 @@ namespace CarMaintenance.APIs.Middlewares
             {
                 await _next.Invoke(context);
 
-                // Handle explicit 404 responses (when endpoint exists but returns 404)
-                await HandleNotFoundEndPoint(context);
+                // Handle 404 responses (either no matching endpoint or explicit 404 returned by an endpoint)
+                await HandleNotFoundEndpointAsync(context);
             }
             catch (Exception ex)
             {
@@ -36,7 +39,7 @@ namespace CarMaintenance.APIs.Middlewares
         {
             if (context.Response.HasStarted)
             {
-                // Cannot write to response - just log and return
+                // Cannot write to response - just return
                 return;
             }
 
@@ -45,7 +48,7 @@ namespace CarMaintenance.APIs.Middlewares
             context.Response.StatusCode = ex switch
             {
                 NotFoundException => StatusCodes.Status404NotFound,
-                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                UnauthorizedAccessException => StatusCodes.Status403Forbidden,
                 BadRequestException => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError,
             };
@@ -59,10 +62,26 @@ namespace CarMaintenance.APIs.Middlewares
             await context.Response.WriteAsJsonAsync(response);
         }
 
-        private static async Task HandleNotFoundEndPoint(HttpContext context)
+        private static async Task HandleNotFoundEndpointAsync(HttpContext context)
         {
             if (context.Response.HasStarted) return;
 
+            // If endpoint is null it means no matching endpoint was found.
+            var endpoint = context.GetEndpoint();
+            if (endpoint == null && context.Response.StatusCode == StatusCodes.Status404NotFound)
+            {
+                context.Response.ContentType = "application/json";
+                var response = new ErrorToReturn
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = $"End Point {context.Request.Path} is Not Found"
+                };
+
+                await context.Response.WriteAsJsonAsync(response);
+                return;
+            }
+
+            // Also handle the case where an existing endpoint explicitly returned 404
             if (context.Response.StatusCode == StatusCodes.Status404NotFound)
             {
                 context.Response.ContentType = "application/json";
@@ -71,6 +90,7 @@ namespace CarMaintenance.APIs.Middlewares
                     StatusCode = StatusCodes.Status404NotFound,
                     ErrorMessage = $"End Point {context.Request.Path} is Not Found"
                 };
+
                 await context.Response.WriteAsJsonAsync(response);
             }
         }
