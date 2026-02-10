@@ -12,11 +12,11 @@
             set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
         }
 
-        public string? Search { get; set; }        // ✅ بحث بالاسم
-        public string? Category { get; set; }      // ✅ فلترة بالفئة
-        public decimal? MinPrice { get; set; }     // ✅ أقل سعر
-        public decimal? MaxPrice { get; set; }     // ✅ أعلى سعر
-        public int? MaxDuration { get; set; }      // ✅ أقصى مدة
+        public string? Search { get; set; }        //  بحث بالاسم
+        public string? Category { get; set; }      //  فلترة بالفئة
+        public decimal? MinPrice { get; set; }     //  أقل سعر
+        public decimal? MaxPrice { get; set; }     //  أعلى سعر
+        public int? MaxDuration { get; set; }      //  أقصى مدة
         public string? Sort { get; set; }
     }
 }
