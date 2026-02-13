@@ -13,5 +13,8 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
         Task<ServiceDto> CreateServiceAsync(CreateServiceDto createDto);
         Task<ServiceDto> UpdateServiceAsync(UpdateServiceDto updateDto);
         Task DeleteServiceAsync(int id);
+
+        // Get Service Details with Technicians
+        Task<ServiceDetailsDto?> GetServiceDetailsAsync(int id);
     }
 }

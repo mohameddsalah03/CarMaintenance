@@ -29,6 +29,16 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
             return Ok(service);
         }
 
+        //  Get service details with technicians
+        [AllowAnonymous]
+        [HttpGet("{id}/details")] // GET: /api/Services/1/details
+        public async Task<ActionResult<ServiceDetailsDto>> GetServiceDetails([FromRoute] int id)
+        {
+            var serviceDetails = await serviceManager.ServiceService.GetServiceDetailsAsync(id);
+            return Ok(serviceDetails);
+        }
+
+
         #endregion
 
         #region Admin Only

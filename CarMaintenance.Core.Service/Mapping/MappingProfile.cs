@@ -4,6 +4,7 @@ using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
 using CarMaintenance.Shared.DTOs.Vehicles;
+using System.Text.Json;
 
 namespace CarMaintenance.Core.Service.Mapping
 {
@@ -11,10 +12,25 @@ namespace CarMaintenance.Core.Service.Mapping
     {
         public MappingProfile()
         {
-            // Services
-            CreateMap<Domain.Models.Data.Service, ServiceDto>();
-            CreateMap<CreateServiceDto, Domain.Models.Data.Service>();
-            CreateMap<UpdateServiceDto, Domain.Models.Data.Service>();
+            // Services Mapping
+            CreateMap<Domain.Models.Data.Service, ServiceDto>()
+                .ForMember(dest => dest.IncludedItems, opt => opt.MapFrom(src => DeserializeList(src.IncludedItems)))
+                .ForMember(dest => dest.ExcludedItems, opt => opt.MapFrom(src => DeserializeList(src.ExcludedItems)))
+                .ForMember(dest => dest.Requirements, opt => opt.MapFrom(src => DeserializeList(src.Requirements)));
+
+            CreateMap<Domain.Models.Data.Service, ServiceDetailsDto>()
+                .IncludeBase<Domain.Models.Data.Service, ServiceDto>()
+                .ForMember(dest => dest.AvailableTechnicians, opt => opt.Ignore()); // Set manually in service
+
+            CreateMap<CreateServiceDto, Domain.Models.Data.Service>()
+                .ForMember(dest => dest.IncludedItems, opt => opt.MapFrom(src => SerializeList(src.IncludedItems)))
+                .ForMember(dest => dest.ExcludedItems, opt => opt.MapFrom(src => SerializeList(src.ExcludedItems)))
+                .ForMember(dest => dest.Requirements, opt => opt.MapFrom(src => SerializeList(src.Requirements)));
+
+            CreateMap<UpdateServiceDto, Domain.Models.Data.Service>()
+                .ForMember(dest => dest.IncludedItems, opt => opt.MapFrom(src => SerializeList(src.IncludedItems)))
+                .ForMember(dest => dest.ExcludedItems, opt => opt.MapFrom(src => SerializeList(src.ExcludedItems)))
+                .ForMember(dest => dest.Requirements, opt => opt.MapFrom(src => SerializeList(src.Requirements)));
 
             //Vehicles
             CreateMap<Vehicle, VehicleDto>()
@@ -60,5 +76,39 @@ namespace CarMaintenance.Core.Service.Mapping
 
             CreateMap<AdditionalIssue, AdditionalIssueDto>();
         }
+
+
+        //  Helper Methods for JSON Serialization/Deserialization
+        private static List<string> DeserializeList(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<string>();
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        private static string? SerializeList(List<string>? list)
+        {
+            if (list == null || !list.Any())
+                return null;
+
+            try
+            {
+                return JsonSerializer.Serialize(list);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    
+
     }
 }
