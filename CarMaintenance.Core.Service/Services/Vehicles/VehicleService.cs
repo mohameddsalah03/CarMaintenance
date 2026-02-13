@@ -39,7 +39,7 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
 
         public async Task<VehicleDto> AddVehicleAsync(CreateVehicleDto createDto, string userId)
         {
-            // ✅ تصحيح 1: استخدم PlateNumber مش userId
+            //  تصحيح 1: استخدم PlateNumber مش userId
             var plateSpec = new VehicleByPlateNumberSpecifications(createDto.PlateNumber);
             var existingVehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(plateSpec);
 
@@ -56,7 +56,7 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             var spec = new VehicleSpecifications(vehicle.Id, userId);
             var createdVehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(spec);
 
-            // ✅ تصحيح 2: استخدم createdVehicle مش vehicle
+            //  تصحيح 2: استخدم createdVehicle مش vehicle
             return mapper.Map<VehicleDto>(createdVehicle!);
         }
 

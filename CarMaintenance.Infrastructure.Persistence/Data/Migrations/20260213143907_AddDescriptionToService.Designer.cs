@@ -4,6 +4,7 @@ using CarMaintenance.Infrastructure.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 {
     [DbContext(typeof(CarDbContext))]
-    partial class CarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260213143907_AddDescriptionToService")]
+    partial class AddDescriptionToService
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -320,19 +323,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     b.Property<int>("EstimatedDurationMinutes")
                         .HasColumnType("int");
 
-                    b.Property<string>("ExcludedItems")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IncludedItems")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar");
-
-                    b.Property<string>("Requirements")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
