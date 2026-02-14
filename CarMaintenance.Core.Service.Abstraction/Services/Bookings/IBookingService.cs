@@ -12,6 +12,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
         Task<BookingDto> CreateBookingAsync(CreateBookingDto createBookingDto , string userId);
         Task<Pagination<BookingDto>> GetMyBookingsAsync(BookingSpecParams specParams, string userId);
         Task<BookingDetailsDto> GetBookingDetailsAsync(int id, string userId);
+        Task CancelBookingAsync(int id, string userId);
 
         //Technicians
         Task<Pagination<BookingDto>> GetMyAssignedBookingsAsync(BookingSpecParams specParams, string technicianId);

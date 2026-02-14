@@ -3,7 +3,6 @@ using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
-using CarMaintenance.Core.Service.Services.Service;
 using CarMaintenance.Core.Service.Services.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

@@ -23,6 +23,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasColumnType("nvarchar")
                 .IsRequired();
 
+            builder.Property(s => s.Description)
+                .HasMaxLength(1000)
+                .HasColumnType("nvarchar")
+                .IsRequired(); 
+
             builder.Property(s => s.Category)
                 .HasMaxLength(100)
                 .HasColumnType("nvarchar")
@@ -34,6 +39,19 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 
             builder.Property(s => s.EstimatedDurationMinutes)
                 .IsRequired();
+
+            //
+            builder.Property(s => s.IncludedItems)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
+
+            builder.Property(s => s.ExcludedItems)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
+
+            builder.Property(s => s.Requirements)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
 
             // Relationships
             // Service -> BookingService (One-to-Many)

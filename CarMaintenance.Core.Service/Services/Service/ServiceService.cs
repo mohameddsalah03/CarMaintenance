@@ -1,11 +1,14 @@
 ﻿using AutoMapper;
 using CarMaintenance.Core.Domain.Contracts.Persistence;
+using CarMaintenance.Core.Domain.Models.Data;
+using CarMaintenance.Core.Domain.Specifications.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.DTOs.Services;
+using CarMaintenance.Shared.DTOs.Technicians;
 using CarMaintenance.Shared.Exceptions;
 
-namespace CarMaintenance.Core.Service.Services.Service
+namespace CarMaintenance.Core.Service
 {
     public class ServiceService(IUnitOfWork unitOfWork , IMapper mapper) : IServiceService
     {
@@ -75,7 +78,27 @@ namespace CarMaintenance.Core.Service.Services.Service
             await unitOfWork.SaveChangesAsync();
         }
 
-       
+        public async Task<ServiceDetailsDto?> GetServiceDetailsAsync(int id)
+        {
+            var spec = new ServiceSpecifications(id);
+            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service,int>().GetWithSpecAsync(spec);
+
+            if (service is null)
+                throw new NotFoundException(nameof(Domain.Models.Data.Service), id);
+
+            var serviceDetails = mapper.Map<ServiceDetailsDto>(service);
+
+            var specTech = new TechnicianSpecification(true);
+            var allTechnicians = await unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(specTech);
+
+            // 3.Filter technicians by specialization(flexible logic)
+            var filteredTechnicians = new TechnicianByServiceCategorySpecification(service.Category, true);
+
+            serviceDetails.AvailableTechnicians = mapper.Map<List<TechniciansDto>>(filteredTechnicians);
+            return serviceDetails;
+        }
+
+
 
         #endregion
 
