@@ -3,16 +3,13 @@ using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Domain.Models.Data.Enums;
 using CarMaintenance.Core.Domain.Specifications.Bookings;
-using CarMaintenance.Core.Domain.Specifications.Vehicles;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
 using CarMaintenance.Shared.DTOs.Bookings;
 using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
 using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Common;
-using CarMaintenance.Shared.DTOs.Vehicles;
 using CarMaintenance.Shared.Exceptions;
-using BookingService =  CarMaintenance.Core.Domain.Models.Data.BookingService;
 namespace CarMaintenance.Core.Service.Services.Bookings
 {
     internal class BookingService(
@@ -51,8 +48,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             var data = _mapper.Map<BookingDetailsDto>(booking);
             return data;
-        }
-        
+        } 
         public async Task<BookingDto> CreateBookingAsync(CreateBookingDto createBookingDto, string userId)
         {
             /// var specVehicle = new VehicleSpecifications(userId);
@@ -117,8 +113,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     Duration = serviceDto.Duration,
                     Status = BookingStatus.Pending
                 };
-
-                //await _unitOfWork.GetRepo<Domain.Models.Data.BookingService, (int,int))>().AddAsync(bookingService);
+                await _unitOfWork.GetRepo<Domain.Models.Data.BookingService, int>().AddAsync(bookingService);
             }
 
             await _unitOfWork.SaveChangesAsync();
@@ -132,13 +127,47 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         }
 
 
-        public Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto approveAdditionalIssue, string userId)
+        public async Task CancelBookingAsync(int id, string userId)
         {
-            throw new NotImplementedException();
+            var spec = new BookingSpecifications(id);
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
+
+            if (booking == null)
+                throw new NotFoundException(nameof(booking), id);
+            if (booking.UserId != userId)
+                throw new UnauthorizedException("ليس لديك صلاحية لإلغاء هذا الحجز");
+
+            if (booking.Status == BookingStatus.Completed)
+                throw new BadRequestException("لا يمكن إلغاء حجز مكتمل");
+
+            if (booking.Status == BookingStatus.Cancelled)
+                throw new BadRequestException("الحجز ملغى بالفعل");
+
+            booking.Status = BookingStatus.Cancelled;
+            _unitOfWork.GetRepo<Booking, int>().Update(booking);
+            await _unitOfWork.SaveChangesAsync();
+
         }
-        public Task CancelBookingAsync(int id, string userId)
+        public async Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto approveAdditionalIssue, string userId)
         {
-            throw new NotImplementedException();
+            var issue = await _unitOfWork.GetRepo<AdditionalIssue, int>().GetByIdAsync(approveAdditionalIssue.IssueId);
+            if (issue is null)
+                throw new NotFoundException(nameof(AdditionalIssue), approveAdditionalIssue.IssueId);
+
+            
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetByIdAsync(issue.BookingId);
+            if (booking is null || booking.UserId != userId)
+                throw new UnauthorizedException("ليس لديك صلاحية للموافقة على هذه المشكلة");
+
+            issue.IsApproved = approveAdditionalIssue.IsApproved;
+            if(approveAdditionalIssue.IsApproved)
+            {
+                booking.TotalCost += issue.EstimatedCost;
+                _unitOfWork.GetRepo<Booking, int>().Update(booking);
+            }
+
+            _unitOfWork.GetRepo<AdditionalIssue, int>().Update(issue);
+            await _unitOfWork.SaveChangesAsync();
         }
 
         #endregion
@@ -161,18 +190,75 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             };
 
         }
-        public Task<AdditionalIssueDto> AddAdditionalIssueAsync(int bookingId, AddAdditionalIssueDto issueDto)
+        public async Task<AdditionalIssueDto> AddAdditionalIssueAsync(int bookingId, AddAdditionalIssueDto issueDto, string technicianId)
         {
-            throw new NotImplementedException();
+            var spec = new BookingSpecifications(bookingId);
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
+
+            if (booking == null)
+                throw new NotFoundException(nameof(booking), bookingId);
+
+            if(booking.TechnicianId != technicianId)
+                throw new UnauthorizedException("ليس لديك صلاحية لاضافة مشاكل اضافيه لهذا الحجز");
+
+            var additionalIssue = new AdditionalIssue
+            {
+                Title = issueDto.Title,
+                EstimatedCost = issueDto.EstimatedCost,
+                BookingId = bookingId,
+                IsApproved = false,
+                
+            };
+
+            await _unitOfWork.GetRepo<AdditionalIssue, int>().AddAsync(additionalIssue);
+            await _unitOfWork.SaveChangesAsync();
+             
+            return _mapper.Map<AdditionalIssueDto>(additionalIssue);
+
         }
-        public Task<BookingDto> UpdateBookingStatusAsync(int id, UpdateBookingStatusDto statusDto, string technicianId)
+        public async Task<BookingDto> UpdateBookingStatusAsync(int id, UpdateBookingStatusDto statusDto, string technicianId)
         {
-            throw new NotImplementedException();
+            var spec = new BookingSpecifications(id);
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
+
+            if (booking == null)
+                throw new NotFoundException(nameof(booking), id);
+
+            if (booking.TechnicianId != technicianId)
+                throw new UnauthorizedException("ليس لديك صلاحية لاضافة مشاكل اضافيه لهذا الحجز");
+
+            // Parse status
+            if (!Enum.TryParse<BookingStatus>(statusDto.Status, true, out var newStatus))
+                throw new BadRequestException("حالة غير صحيحة");
+
+            // Validate status transition
+            if (booking.Status == BookingStatus.Pending && newStatus == BookingStatus.InProgress)
+            {
+                booking.Status = BookingStatus.InProgress;
+            }
+            else if (booking.Status == BookingStatus.InProgress && newStatus == BookingStatus.Completed)
+            {
+                booking.Status = BookingStatus.Completed;
+                booking.PaymentStatus = PaymentStatus.Paid; // Auto-mark as paid when completed
+            }
+            else
+            {
+                throw new BadRequestException("تحديث الحالة غير صحيح");
+            }
+
+            _unitOfWork.GetRepo<Booking, int>().Update(booking);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Get updated booking
+            var updatedSpec = new BookingSpecifications(id);
+            var updatedBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(updatedSpec);
+
+            return _mapper.Map<BookingDto>(updatedBooking!);
         }
 
 
         #endregion
-        
+
         #region Admin
         public async Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams)
         {
@@ -188,9 +274,33 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 Data = data
             };
         }
-        public Task<BookingDto> AssignTechnicianAsync(int id, AssignTechnicianDto assignDto)
+
+        // Waiting AI[Team] To Handle It
+        public async Task<BookingDto> AssignTechnicianAsync(int id, AssignTechnicianDto assignDto)
         {
-            throw new NotImplementedException();
+            // 1. Get Booking 
+            var spec = new BookingSpecifications(id);
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
+
+            if (booking == null)
+                throw new NotFoundException(nameof(booking), id);
+
+            // Validate technician exists and is available
+            var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(assignDto.TechnicianId);
+            if (technician is null)
+                throw new BadRequestException("الفني غير موجود");
+            if (!technician.IsAvailable)
+                throw new BadRequestException("الفني غير متاح");
+            
+            booking.TechnicianId = assignDto.TechnicianId;
+            _unitOfWork.GetRepo<Booking, int>().Update(booking);
+            await _unitOfWork.SaveChangesAsync();
+            
+            // Get updated booking
+            var updatedSpec = new BookingSpecifications(id);
+            var updatedBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(updatedSpec);
+
+            return _mapper.Map<BookingDto>(updatedBooking!);
         }
 
 
@@ -210,10 +320,5 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         }
 
         #endregion
-
-
-
-
-
     }
 }

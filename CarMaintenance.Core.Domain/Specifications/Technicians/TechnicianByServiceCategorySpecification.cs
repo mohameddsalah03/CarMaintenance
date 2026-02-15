@@ -12,7 +12,10 @@ namespace CarMaintenance.Core.Domain.Specifications.Technicians
                 (t.Specialization.Contains(serviceCategory) ||
                  t.Specialization.Contains("عام") ||
                  t.Specialization.Contains("شامل") ||
-                 t.Specialization.Contains("صيانة عامة")))
+                 t.Specialization.Contains("كهرباء السيارات") ||
+                 t.Specialization.Contains("صيانة عامة")
+                )
+            )
         {
             AddIncludes();
             AddOrderByDesc(t => t.Rating);

@@ -88,17 +88,19 @@ namespace CarMaintenance.Core.Service
 
             var serviceDetails = mapper.Map<ServiceDetailsDto>(service);
 
-            var specTech = new TechnicianSpecification(true);
-            var allTechnicians = await unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(specTech);
+            // 2. Create specification
+            var techSpec = new TechnicianByServiceCategorySpecification(service.Category, onlyAvailable: true);
 
-            // 3.Filter technicians by specialization(flexible logic)
-            var filteredTechnicians = new TechnicianByServiceCategorySpecification(service.Category, true);
+            // 3. Get DATA using the specification
+            var filteredTechnicians = await unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(techSpec);
 
+            // 4. Map the DATA (not the specification)
             serviceDetails.AvailableTechnicians = mapper.Map<List<TechniciansDto>>(filteredTechnicians);
+
             return serviceDetails;
         }
 
-
+        
 
         #endregion
 
