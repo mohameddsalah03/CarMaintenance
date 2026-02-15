@@ -45,10 +45,13 @@ namespace CarMaintenance.APIs.Middlewares
 
             context.Response.Clear();
             context.Response.ContentType = "application/json";
+
+
+
             context.Response.StatusCode = ex switch
             {
                 NotFoundException => StatusCodes.Status404NotFound,
-                UnauthorizedAccessException => StatusCodes.Status403Forbidden,
+                UnauthorizedException => StatusCodes.Status403Forbidden,
                 BadRequestException => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError,
             };
@@ -79,6 +82,8 @@ namespace CarMaintenance.APIs.Middlewares
 
                 await context.Response.WriteAsJsonAsync(response);
                 return;
+
+
             }
 
             // Also handle the case where an existing endpoint explicitly returned 404

@@ -1,8 +1,9 @@
-﻿using CarMaintenance.Core.Domain.Models.Data.Enums;
+﻿using CarMaintenance.Core.Domain.Models.Base;
+using CarMaintenance.Core.Domain.Models.Data.Enums;
 
 namespace CarMaintenance.Core.Domain.Models.Data
 {
-    public class BookingService
+    public class BookingService : BaseEntity<int>
     {
         // Composite Key 
         public int BookingId { get; set; }
