@@ -24,9 +24,5 @@ namespace CarMaintenance.Shared.DTOs.Bookings.CreateBooking
         public string PaymentMethod { get; set; } = null!; // "Cash" or "CreditCard"
 
 
-        public List<BookingServiceDto> BookingServiceDtos { get; set; } = new ();
-
-
-
     }
 }
