@@ -2,7 +2,9 @@
 using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
+using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
+using CarMaintenance.Core.Service.Services.Bookings;
 using CarMaintenance.Core.Service.Services.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,7 @@ namespace CarMaintenance.Core.Service.Services
         private readonly Lazy<IAuthService> _authService;
         private readonly Lazy<IVehicleService> _vehicleService;
         private readonly Lazy<ITechniciansService> _technicianService;
+        private readonly Lazy<IBookingService> _bookingService;
 
 
         public ServiceManager(
@@ -33,6 +36,7 @@ namespace CarMaintenance.Core.Service.Services
             _serviceProvider = serviceProvider;
             _serviceService = new Lazy<IServiceService>(() => new ServiceService(_unitOfWork, _mapper));
             _vehicleService = new Lazy<IVehicleService>(() => new VehicleService(_unitOfWork, _mapper));
+            _bookingService = new Lazy<IBookingService>(() => new CarMaintenance.Core.Service.Services.Bookings.BookingService(_unitOfWork, _mapper));
             _authService = new Lazy<IAuthService>(() => _serviceProvider.GetRequiredService<IAuthService>());
             _technicianService = new Lazy<ITechniciansService>(() => _serviceProvider.GetRequiredService<ITechniciansService>());
         }
@@ -46,5 +50,7 @@ namespace CarMaintenance.Core.Service.Services
         public IVehicleService VehicleService => _vehicleService.Value;
 
         public ITechniciansService TechniciansService => _technicianService.Value;
+
+        public IBookingService BookingService => _bookingService.Value;
     }
 }

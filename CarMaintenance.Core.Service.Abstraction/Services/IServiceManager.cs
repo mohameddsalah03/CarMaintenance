@@ -1,4 +1,5 @@
 ﻿using CarMaintenance.Core.Service.Abstraction.Services.Auth;
+using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
 
 namespace CarMaintenance.Core.Service.Abstraction.Services
@@ -10,6 +11,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
         public IVehicleService  VehicleService { get; }
 
         public ITechniciansService TechniciansService { get; }
+        public IBookingService BookingService { get; }
 
     }
 }

@@ -22,7 +22,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
 
         //Admin 
         Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams);
-        Task<BookingDto> AssignTechnicianAsync(int id, AssignTechnicianDto assignDto);
+        //Task<BookingDto> AssignTechnicianAsync(int id, AssignTechnicianDto assignDto);
 
 
         // Additional Issues
