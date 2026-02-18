@@ -14,9 +14,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             // Table 
             builder.ToTable("BookingServices");
 
-            // Composite Primary Key
-            builder.HasKey(bs => new { bs.BookingId, bs.ServiceId });
+            // Primary Key على Id
+            builder.HasKey(bs => bs.Id);
 
+            // Unique Index على الـ Composite
+            builder.HasIndex(bs => new { bs.BookingId, bs.ServiceId })
+                   .IsUnique();
             // Properties
             builder.Property(bs => bs.Duration)
                 .IsRequired();

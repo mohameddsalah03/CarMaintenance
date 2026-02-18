@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
 using CarMaintenance.Core.Domain.Models.Data;
+using CarMaintenance.Core.Domain.Models.Data.Enums;
+using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
+using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
@@ -49,8 +52,6 @@ namespace CarMaintenance.Core.Service.Mapping
             CreateMap<TechniciansDto, Technician>();
 
             // Bookings 
-            
-
             // Bookings
             CreateMap<Booking, BookingDto>()
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.DisplayName))
@@ -59,7 +60,10 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Vehicle.Brand))
                 .ForMember(dest => dest.Model, opt => opt.MapFrom(src => src.Vehicle.Model))
                 .ForMember(dest => dest.PlateNumber, opt => opt.MapFrom(src => src.Vehicle.PlateNumber))
-                .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
+                .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src =>
+                    src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
+                .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src =>
+                    src.AssignedTechnician != null ? src.AssignedTechnician.UserId : null))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
@@ -75,6 +79,53 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
             CreateMap<AdditionalIssue, AdditionalIssueDto>();
+
+            // CreateBooking → Booking  ✅ الجديد
+            CreateMap<CreateBookingDto, Booking>()
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src =>
+                    Enum.Parse<PaymentMethod>(src.PaymentMethod, true)))
+                .ForMember(dest => dest.Status, opt => opt.Ignore())           // Set manually in service
+                .ForMember(dest => dest.PaymentStatus, opt => opt.Ignore())    // Set manually in service
+                .ForMember(dest => dest.BookingNumber, opt => opt.Ignore())    // Generated in service
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())           // Set from token in service
+                .ForMember(dest => dest.TotalCost, opt => opt.Ignore())        // Calculated in service
+                .ForMember(dest => dest.TechnicianId, opt => opt.Ignore())     // Assigned later
+                .ForMember(dest => dest.BookingServices, opt => opt.Ignore()); // Added separately after save
+
+            // BookingServiceDto → BookingService  ✅ الجديد
+            CreateMap<BookingServiceDto, BookingService>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => BookingStatus.Pending))
+                .ForMember(dest => dest.BookingId, opt => opt.Ignore()); // Set after booking is saved
+
+            // AddAdditionalIssueDto → AdditionalIssue  ✅ الجديد
+            CreateMap<AddAdditionalIssueDto, AdditionalIssue>()
+                .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(_ => false))
+                .ForMember(dest => dest.BookingId, opt => opt.Ignore()); // Set manually in service
+
+            //// Bookings
+            //CreateMap<Booking, BookingDto>()
+            //    .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.DisplayName))
+            //    .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.User.Id))
+            //    .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.User.PhoneNumber))
+            //    .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Vehicle.Brand))
+            //    .ForMember(dest => dest.Model, opt => opt.MapFrom(src => src.Vehicle.Model))
+            //    .ForMember(dest => dest.PlateNumber, opt => opt.MapFrom(src => src.Vehicle.PlateNumber))
+            //    .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
+            //    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            //    .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
+            //    .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+            //    .ForMember(dest => dest.BookingServiceDetailsDtos, opt => opt.MapFrom(src => src.BookingServices));
+            //
+            //CreateMap<Booking, BookingDetailsDto>()
+            //    .IncludeBase<Booking, BookingDto>()
+            //    .ForMember(dest => dest.AdditionalIssueDtos, opt => opt.MapFrom(src => src.AdditionalIssues));
+            //
+            //CreateMap<BookingService, BookingServiceDetailsDto>()
+            //    .ForMember(dest => dest.ServiceName, opt => opt.MapFrom(src => src.Service.Name))
+            //    .ForMember(dest => dest.ServicePrice, opt => opt.MapFrom(src => src.Service.BasePrice))
+            //    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            //
+            //CreateMap<AdditionalIssue, AdditionalIssueDto>();
         }
 
 

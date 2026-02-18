@@ -23,6 +23,7 @@ namespace CarMaintenance.APIs
                 {
                     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+
                 });
 
             //Reauired Services For Swagger
