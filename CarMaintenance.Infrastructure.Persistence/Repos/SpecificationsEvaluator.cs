@@ -48,6 +48,14 @@ namespace CarMaintenance.Infrastructure.Persistence.Repos
 
             #endregion
 
+
+            #region  ThenIncludes 
+            // Apply ThenIncludes using string paths (e.g., "BookingServices.Service")
+            query = spec.ThenIncludeStrings.Aggregate(query, (CurrentQuery, IncludeString) =>
+                CurrentQuery.Include(IncludeString)
+            );
+            #endregion
+
             return query;
 
         }

@@ -64,6 +64,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
             Includes.Add(e => e.BookingServices);
             Includes.Add(e => e.Review!);
             Includes.Add(e => e.Vehicle);
+            AddThenInclude($"{nameof(Booking.BookingServices)}.{nameof(BookingService.Service)}");
 
         }
 
