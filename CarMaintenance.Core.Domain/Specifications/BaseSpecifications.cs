@@ -16,8 +16,8 @@ namespace CarMaintenance.Core.Domain.Specifications
         public int Skip { get; set; }
         public int Take { get; set; }
         public bool IsPaginationEnabled { get; set; }
+        public List<string> ThenIncludeStrings { get; set; } = new();
 
-        
         protected BaseSpecifications() { }
 
         protected BaseSpecifications(Expression<Func<TEntity, bool>> criteriaExpression)
@@ -49,5 +49,11 @@ namespace CarMaintenance.Core.Domain.Specifications
             Skip = skip;
             Take = take;
         }
+
+        protected void AddThenInclude(string includeString)
+        {
+            ThenIncludeStrings.Add(includeString);
+        }
+
     }
 }
