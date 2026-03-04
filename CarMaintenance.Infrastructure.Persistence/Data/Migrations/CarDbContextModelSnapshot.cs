@@ -280,13 +280,16 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal>("Rating")
-                        .HasColumnType("decimal(3,2)");
+                    b.Property<int>("ServiceRating")
+                        .HasColumnType("int");
 
                     b.Property<string>("TechnicianId")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("TechnicianRating")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()

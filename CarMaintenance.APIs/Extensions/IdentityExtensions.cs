@@ -17,7 +17,7 @@ namespace CarMaintenance.APIs.Extensions
             services.AddIdentity<ApplicationUser, IdentityRole>(identityOptions =>
             {
                 identityOptions.User.RequireUniqueEmail = true;
-                identityOptions.Password.RequireNonAlphanumeric = true;// 
+                identityOptions.Password.RequireNonAlphanumeric = true;
                 identityOptions.Password.RequiredUniqueChars = 1;
                 identityOptions.Password.RequiredLength = 6;
                 identityOptions.Password.RequireUppercase = true;

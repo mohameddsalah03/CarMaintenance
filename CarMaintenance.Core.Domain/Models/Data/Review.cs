@@ -4,7 +4,8 @@ namespace CarMaintenance.Core.Domain.Models.Data
 {
     public class Review : BaseEntity<int>
     {
-        public decimal Rating { get; set; }
+        public int ServiceRating { get; set; }    
+        public int TechnicianRating { get; set; } 
         public string? Comment { get; set; }
         public DateTime CreatedAt { get; set; }
 

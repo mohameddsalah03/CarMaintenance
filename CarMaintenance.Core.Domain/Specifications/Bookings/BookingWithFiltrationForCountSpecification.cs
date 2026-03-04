@@ -4,9 +4,9 @@ using System.Linq.Expressions;
 
 namespace CarMaintenance.Core.Domain.Specifications.Bookings
 {
-    public class BookingWithFiltrationForCountSpecifications : BaseSpecifications<Booking, int>
+    public class BookingWithFiltrationForCountSpecification : BaseSpecifications<Booking, int>
     {
-        public BookingWithFiltrationForCountSpecifications(BookingSpecParams specParams)
+        public BookingWithFiltrationForCountSpecification(BookingSpecParams specParams)
             : base(BuildCriteria(specParams))
         {
         }

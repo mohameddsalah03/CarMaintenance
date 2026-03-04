@@ -54,7 +54,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .IsRequired(false);
 
             // Relationships
-            // Service -> BookingService (One-to-Many)
             builder.HasMany(s => s.BookingServices)
                 .WithOne(bs => bs.Service)
                 .HasForeignKey(bs => bs.ServiceId)

@@ -9,7 +9,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
 {
     public class VehiclesController(IServiceManager serviceManager) : BaseApiController
     {
-        // Get all vehicles for the logged-in user
         [Authorize]
         [HttpGet] // GET: /api/Vehicles
         public async Task<ActionResult<IEnumerable<VehicleDto>>> GetUserVehicles()
@@ -19,7 +18,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
             return Ok(vehicles);
         }
 
-        // Get specific vehicle by ID (only if it belongs to the user)
         [Authorize]
         [HttpGet("{id}")] // GET: /api/Vehicles/9
         public async Task<ActionResult<VehicleDto>> GetVehicle([FromRoute] int id)
@@ -29,7 +27,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
             return Ok(vehicle);
         }
 
-        // Add new vehicle for the logged-in user
         [Authorize]
         [HttpPost] // POST: /api/Vehicles
         public async Task<ActionResult<VehicleDto>> AddVehicle([FromBody] CreateVehicleDto createDto)
@@ -39,7 +36,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
             return CreatedAtAction(nameof(GetVehicle), new { id = vehicle.Id }, vehicle);
         }
 
-        // Update vehicle (only if it belongs to the user)
         [Authorize]
         [HttpPut("{id}")] // PUT: /api/Vehicles/1
         public async Task<ActionResult<VehicleDto>> UpdateVehicle(
@@ -52,7 +48,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
             return Ok(vehicle);
         }
 
-        // Delete vehicle (only if it belongs to the user)
         [Authorize]
         [HttpDelete("{id}")] // DELETE: /api/Vehicles/1
         public async Task<ActionResult> DeleteVehicle([FromRoute] int id)
@@ -62,7 +57,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
             return NoContent();
         }
 
-        // Admin Only - Get all vehicles from all users
         [Authorize(Roles = "Admin")]
         [HttpGet("all")] // GET: /api/Vehicles/all
         public async Task<ActionResult<IEnumerable<VehicleDto>>> GetAllVehicles()
