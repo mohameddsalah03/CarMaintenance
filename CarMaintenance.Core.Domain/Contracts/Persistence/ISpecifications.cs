@@ -8,6 +8,7 @@ namespace CarMaintenance.Core.Domain.Contracts.Persistence
     {
         Expression<Func<TEntity, bool>>? Criteria { get; set; }
         List<Expression<Func<TEntity, object>>> Includes { get; set; }
+        List<string> ThenIncludeStrings { get; set; }
         Expression<Func<TEntity, object>>? OrderBy { get; set; }
         Expression<Func<TEntity, object>>? OrderByDesc { get; set; }
         int Skip { get; set; }
