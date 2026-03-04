@@ -17,14 +17,15 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.Property(E => E.Id)
                    .ValueGeneratedOnAdd();
 
-            builder.Property(r => r.Rating)
-                .HasColumnType("decimal(3,2)")
+            builder.Property(r => r.TechnicianRating)
+                .IsRequired();
+            builder.Property(r=>r.ServiceRating)
                 .IsRequired();
 
             builder.Property(r => r.Comment)
                 .HasMaxLength(1000)
                 .HasColumnType("nvarchar")
-                .IsRequired(false); // Optional
+                .IsRequired(false); 
 
             builder.Property(r => r.CreatedAt)
                 .IsRequired();
@@ -43,19 +44,16 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             // Indexes
             builder.HasIndex(r => r.UserId);
             builder.HasIndex(r => r.TechnicianId);
-            builder.HasIndex(r => r.BookingId)
-                .IsUnique(); // One-to-One with Booking
+            builder.HasIndex(r => r.BookingId).IsUnique(); // One-to-One with Booking
 
            
             // Relationships
-            // Review -> Booking (One-to-One)
             builder.HasOne(r => r.Booking)
                 .WithOne(b => b.Review)
                 .HasForeignKey<Review>(r => r.BookingId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
-            // Review -> Technician (Many-to-One)
             builder.HasOne(r => r.Technician)
                 .WithMany(t => t.ReviewsReceived)
                 .HasForeignKey(r => r.TechnicianId)

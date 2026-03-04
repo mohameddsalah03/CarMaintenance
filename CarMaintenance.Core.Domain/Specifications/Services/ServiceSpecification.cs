@@ -3,16 +3,16 @@ using CarMaintenance.Core.Domain.Specifications;
 using CarMaintenance.Shared.DTOs.Services;
 using System.Linq.Expressions;
 
-public class ServiceSpecifications : BaseSpecifications<Service, int>
+public class ServiceSpecification : BaseSpecifications<Service, int>
 {
-    public ServiceSpecifications(ServiceSpecParams specParams)
+    public ServiceSpecification(ServiceSpecParams specParams)
         : base(BuildCriteria(specParams))
     {
         ApplySorting(specParams.Sort);
         AddPagination(specParams.PageSize * (specParams.PageIndex - 1), specParams.PageSize);
     }
 
-    public ServiceSpecifications(int id) : base(id) { }
+    public ServiceSpecification(int id) : base(id) { }
 
     private static Expression<Func<Service, bool>> BuildCriteria(ServiceSpecParams specParams)
     {

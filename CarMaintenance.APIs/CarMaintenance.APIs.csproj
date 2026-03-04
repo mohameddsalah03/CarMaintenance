@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CarMaintenance.APIs.Controllers\CarMaintenance.APIs.Controllers.csproj" />
     <ProjectReference Include="..\CarMaintenance.Infrastructure.Persistence\CarMaintenance.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\CarMaintenance.Infrastructure\CarMaintenance.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

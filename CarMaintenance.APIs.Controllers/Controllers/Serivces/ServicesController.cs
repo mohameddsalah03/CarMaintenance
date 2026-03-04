@@ -11,7 +11,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
     {
         #region Public Endpoints
 
-        // Get all services with filters and pagination
         [AllowAnonymous]
         [HttpGet] // GET: /api/Services?category=صيانة&sort=priceAsc&pageSize=10&pageIndex=1
         public async Task<ActionResult<Pagination<ServiceDto>>> GetServices([FromQuery] ServiceSpecParams specParams)
@@ -20,7 +19,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
             return Ok(result);
         }
 
-        // Get service by ID
         [AllowAnonymous]
         [HttpGet("{id}")] // GET: /api/Services/1
         public async Task<ActionResult<ServiceDto>> GetService(int id)
@@ -29,7 +27,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
             return Ok(service);
         }
 
-        //  Get service details with technicians
         [AllowAnonymous]
         [HttpGet("{id}/details")] // GET: /api/Services/1/details
         public async Task<ActionResult<ServiceDetailsDto>> GetServiceDetails(int id)
@@ -43,7 +40,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
 
         #region Admin Only
 
-        // Admin Only - Create new service
         [Authorize(Roles = "Admin")]
         [HttpPost] // POST: /api/Services
         public async Task<ActionResult<ServiceDto>> CreateService([FromBody] CreateServiceDto createDto)
@@ -52,7 +48,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
             return CreatedAtAction(nameof(GetService), new { id = service.Id }, service);
         }
 
-        // Admin Only - Update service
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")] // PUT: /api/Services/1
         public async Task<ActionResult<ServiceDto>> UpdateService(
@@ -64,7 +59,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
             return Ok(service);
         }
 
-        // Admin Only - Delete service
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")] // DELETE: /api/Services/1
         public async Task<ActionResult> DeleteService( int id)

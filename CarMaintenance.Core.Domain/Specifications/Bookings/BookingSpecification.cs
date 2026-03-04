@@ -4,11 +4,11 @@ using System.Linq.Expressions;
 
 namespace CarMaintenance.Core.Domain.Specifications.Bookings
 {
-    public class BookingSpecifications : BaseSpecifications<Booking, int>
+    public class BookingSpecification : BaseSpecifications<Booking, int>
 
     {
 
-        public BookingSpecifications(BookingSpecParams specParams) 
+        public BookingSpecification(BookingSpecParams specParams) 
             : base(BuildCriteria(specParams))
         {
             ApplySorting(specParams.Sort);
@@ -18,15 +18,14 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
         }
 
 
-        // Get user's bookings
-        public BookingSpecifications(string userId, bool isCustomer = true)
+        public BookingSpecification(string userId, bool isCustomer = true)
             : base(b => isCustomer ? b.UserId == userId : b.TechnicianId == userId)
         {
             AddIncludes();
             AddOrderByDesc(b => b.ScheduledDate);
         }
 
-        public BookingSpecifications(int id) : base(id) 
+        public BookingSpecification(int id) : base(id) 
         {
             AddIncludes();
         }

@@ -15,15 +15,13 @@ namespace CarMaintenance.Core.Service
 
         public async Task<Pagination<ServiceDto>> GetServicesAsync(ServiceSpecParams specParams)
         {
-            // Get data with specs
-            var spec = new ServiceSpecifications(specParams);
+            var spec = new ServiceSpecification(specParams);
 
             var services = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetAllWithSpecAsync(spec);
 
             var data = mapper.Map<IEnumerable<ServiceDto>>(services);
 
-            // Get count
-            var specCount = new ServiceWithFiltrationForCountSpecifications(specParams);
+            var specCount = new ServiceWithFiltrationForCountSpecification(specParams);
             var count = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetCountAsync(specCount);
 
             return new Pagination<ServiceDto>(specParams.PageIndex, specParams.PageSize, count)
@@ -34,7 +32,7 @@ namespace CarMaintenance.Core.Service
 
         public async Task<ServiceDto?> GetServiceByIdAsync(int id)
         {
-            var spec = new ServiceSpecifications(id);
+            var spec = new ServiceSpecification(id);
             var service = await unitOfWork.GetRepo<Domain.Models.Data.Service,int>().GetWithSpecAsync(spec);
             if (service is null)
                 throw new NotFoundException(nameof(Service), id);
@@ -80,7 +78,7 @@ namespace CarMaintenance.Core.Service
 
         public async Task<ServiceDetailsDto?> GetServiceDetailsAsync(int id)
         {
-            var spec = new ServiceSpecifications(id);
+            var spec = new ServiceSpecification(id);
             var service = await unitOfWork.GetRepo<Domain.Models.Data.Service,int>().GetWithSpecAsync(spec);
 
             if (service is null)
@@ -88,13 +86,10 @@ namespace CarMaintenance.Core.Service
 
             var serviceDetails = mapper.Map<ServiceDetailsDto>(service);
 
-            // 2. Create specification
             var techSpec = new TechnicianByServiceCategorySpecification(service.Category, onlyAvailable: true);
 
-            // 3. Get DATA using the specification
             var filteredTechnicians = await unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(techSpec);
 
-            // 4. Map the DATA (not the specification)
             serviceDetails.AvailableTechnicians = mapper.Map<List<TechniciansDto>>(filteredTechnicians);
 
             return serviceDetails;

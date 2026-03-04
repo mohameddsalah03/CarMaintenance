@@ -14,17 +14,14 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             // Table 
             builder.ToTable("BookingServices");
 
-            // Primary Key على Id
             builder.HasKey(bs => bs.Id);
 
-            // Unique Index على الـ Composite
             builder.HasIndex(bs => new { bs.BookingId, bs.ServiceId })
                    .IsUnique();
             // Properties
             builder.Property(bs => bs.Duration)
                 .IsRequired();
 
-            // الطريقة الأفضل (أكثر وضوحاً)
             builder.Property(b => b.Status)
                 .HasColumnType("nvarchar(50)")
                 .HasConversion(
@@ -34,14 +31,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 
            
             // Relationships
-            // BookingService -> Booking (Many-to-One)
             builder.HasOne(bs => bs.Booking)
                 .WithMany(b => b.BookingServices)
                 .HasForeignKey(bs => bs.BookingId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
-            // BookingService -> Service (Many-to-One)
             builder.HasOne(bs => bs.Service)
                 .WithMany(s => s.BookingServices)
                 .HasForeignKey(bs => bs.ServiceId)

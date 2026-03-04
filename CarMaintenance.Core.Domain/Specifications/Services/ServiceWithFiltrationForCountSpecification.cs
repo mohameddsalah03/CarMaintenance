@@ -3,9 +3,9 @@ using CarMaintenance.Core.Domain.Specifications;
 using CarMaintenance.Shared.DTOs.Services;
 using System.Linq.Expressions;
 
-public class ServiceWithFiltrationForCountSpecifications : BaseSpecifications<Service, int>
+public class ServiceWithFiltrationForCountSpecification : BaseSpecifications<Service, int>
 {
-    public ServiceWithFiltrationForCountSpecifications(ServiceSpecParams specParams)
+    public ServiceWithFiltrationForCountSpecification(ServiceSpecParams specParams)
         : base(BuildCriteria(specParams))
     {
     }
