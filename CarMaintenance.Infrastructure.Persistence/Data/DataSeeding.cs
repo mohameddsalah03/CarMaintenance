@@ -291,27 +291,38 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 {
                     PropertyNameCaseInsensitive = true,
                     Converters =
-                    {
-                        new BookingStatusJsonConverter(),
-                        new PaymentMethodJsonConverter(),
-                        new PaymentStatusJsonConverter()
-                    }
+            {
+                new BookingStatusJsonConverter(),
+                new PaymentMethodJsonConverter(),
+                new PaymentStatusJsonConverter()
+            }
                 };
                 var bookings = await JsonSerializer.DeserializeAsync<List<Booking>>(bookingsData, options);
 
                 if (bookings != null && bookings.Any())
                 {
-                    // Validate FK references: UserId, VehicleId, TechnicianId (if present)
                     var userIds = _userManager.Users.Select(u => u.Id).ToHashSet();
                     var vehicleIds = _context.Vehicles.Select(v => v.Id).ToHashSet();
                     var technicianIds = _context.Technicians.Select(t => t.Id).ToHashSet();
 
-                    var validBookings = bookings.Where(b => userIds.Contains(b.UserId) && vehicleIds.Contains(b.VehicleId) && (string.IsNullOrWhiteSpace(b.TechnicianId) || technicianIds.Contains(b.TechnicianId))).ToList();
+                    var validBookings = bookings.Where(b =>
+                        userIds.Contains(b.UserId) &&
+                        vehicleIds.Contains(b.VehicleId) &&
+                        (string.IsNullOrWhiteSpace(b.TechnicianId) || technicianIds.Contains(b.TechnicianId))
+                    ).ToList();
 
                     if (validBookings.Any())
                     {
-                        await _context.Bookings.AddRangeAsync(validBookings);
-                        await _context.SaveChangesAsync();
+                        await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT Bookings ON");
+                        try
+                        {
+                            await _context.Bookings.AddRangeAsync(validBookings);
+                            await _context.SaveChangesAsync();
+                        }
+                        finally
+                        {
+                            await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT Bookings OFF");
+                        }
                     }
                 }
             }
@@ -325,21 +336,25 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 if (!File.Exists(bookingServicesPath)) return;
 
                 using var bookingServicesData = File.OpenRead(bookingServicesPath);
-
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
-                    Converters =
-                    {
-                        new BookingStatusJsonConverter(),
-                    }
+                    Converters = { new BookingStatusJsonConverter() }
                 };
                 var bookingServices = await JsonSerializer.DeserializeAsync<List<BookingService>>(bookingServicesData, options);
 
                 if (bookingServices != null && bookingServices.Any())
                 {
-                    await _context.BookingServices.AddRangeAsync(bookingServices);
-                    await _context.SaveChangesAsync();
+                    await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT BookingServices ON");
+                    try
+                    {
+                        await _context.BookingServices.AddRangeAsync(bookingServices);
+                        await _context.SaveChangesAsync();
+                    }
+                    finally
+                    {
+                        await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT BookingServices OFF");
+                    }
                 }
             }
         }
