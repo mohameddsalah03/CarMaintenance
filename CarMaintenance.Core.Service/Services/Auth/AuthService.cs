@@ -1,9 +1,7 @@
-﻿using CarMaintenance.Core.Domain.Contracts.Persistence;
-using CarMaintenance.Core.Domain.Models.Data;
+﻿using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth.Email;
 using CarMaintenance.Shared.DTOs.Auth;
-using CarMaintenance.Shared.DTOs.Technicians;
 using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
 using Google.Apis.Auth;
@@ -41,10 +39,9 @@ namespace CarMaintenance.Core.Service.Services.Auth
             if (result.IsLockedOut) throw new UnauthorizedException("Account Is Locked.");
             if (!result.Succeeded) throw new UnauthorizedException("Invalid Login.");
 
-            // ✅ Generate both tokens
+            //  Generate both tokens
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
-            // ✅ Get roles
             var roles = await _userManager.GetRolesAsync(user);
 
             var response = new UserDto()
@@ -55,7 +52,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 Token = accessToken,
                 RefreshToken = refreshToken,
                 TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
-                Roles = roles // ✅ هنا
+                Roles = roles
             };
 
             return response;
@@ -80,13 +77,12 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 );
             }
 
-            // ✅ Adding role for customer after register 
+            //  Adding role for customer after register 
             await _userManager.AddToRoleAsync(user, "Customer");
 
-            // ✅ Generate both tokens
+            //  Generate both tokens
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
-            // ✅ Get roles
             var roles = await _userManager.GetRolesAsync(user);
 
             var response = new UserDto()
@@ -97,7 +93,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 Token = accessToken,
                 RefreshToken = refreshToken,
                 TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
-                Roles = roles // ✅ هنا
+                Roles = roles 
             };
 
             return response;
@@ -133,14 +129,12 @@ namespace CarMaintenance.Core.Service.Services.Auth
                         );
                     }
 
-                    // ✅ Adding role for customer after register 
+                    // Adding role for customer after register 
                     await _userManager.AddToRoleAsync(user, "Customer");
                 }
 
-                // ✅ Generate both tokens
                 var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
-                // ✅ Get roles
                 var roles = await _userManager.GetRolesAsync(user);
 
                 return new UserDto()
@@ -151,7 +145,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
                     Token = accessToken,
                     RefreshToken = refreshToken,
                     TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
-                    Roles = roles // ✅ هنا
+                    Roles = roles 
                 };
             }
             catch (InvalidJwtException)
@@ -168,12 +162,9 @@ namespace CarMaintenance.Core.Service.Services.Auth
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            //  استخدم TrimEnd عشان تتأكد مفيش مشاكل
             var resetUrl = $"{_appSettings.FrontendUrl.TrimEnd('/')}/reset-password?email={user.Email}&token={encodedToken}";
 
-            // للتأكد (اختياري - شيله بعد التيست)
-            //Console.WriteLine($"Reset URL: {resetUrl}");
-
+           
             var emailBody = $@"
                              <h2>إعادة تعيين كلمة المرور</h2>
                              <p>مرحباً {user.DisplayName},</p>
@@ -216,7 +207,6 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
         #region Helper Methods 
 
-        //  إضافة Method لتوليد Refresh Token
         private string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
@@ -226,10 +216,8 @@ namespace CarMaintenance.Core.Service.Services.Auth
         }
 
 
-        //  تعديل GenerateTokenAsync عشان ترجع Access Token + Refresh Token
         private async Task<(string accessToken, string refreshToken)> GenerateTokensAsync(ApplicationUser user)
         {
-            // Generate Access Token (نفس الكود القديم)
             List<Claim> ClaimList = new List<Claim>()
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -248,7 +236,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
             var tokenObj = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes), // 15 دقيقة
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes), 
                 claims: ClaimList,
                 signingCredentials: signInCredentials
             );
@@ -272,7 +260,6 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
         public async Task<UserDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
         {
-            // 1. Validate Access Token (بدون التحقق من Expiry)
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(refreshTokenDto.Token, new TokenValidationParameters
             {
@@ -282,7 +269,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 ValidIssuer = _jwtSettings.Issuer,
                 ValidateAudience = true,
                 ValidAudience = _jwtSettings.Audience,
-                ValidateLifetime = false, // ✅ مش مهم لو منتهي
+                ValidateLifetime = false, 
                 ClockSkew = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 

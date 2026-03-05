@@ -14,9 +14,9 @@ public class Booking : BaseEntity<int>
     public PaymentMethod PaymentMethod { get; set; }
 
     // Foreign Keys
-    public string UserId { get; set; } = null!; // Mandatory
-    public int VehicleId { get; set; } // Mandatory
-    public string? TechnicianId { get; set; } // Optional (nullable)
+    public string UserId { get; set; } = null!;
+    public int VehicleId { get; set; } 
+    public string? TechnicianId { get; set; } 
 
     // Navigation Properties
     public ApplicationUser User { get; set; } = null!;

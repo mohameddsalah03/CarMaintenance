@@ -4,7 +4,6 @@ namespace CarMaintenance.APIs.Extensions
 {
     public static class InitializerExtensions
     {
-        // generate Object From DbInitializer Explicitly
         public static async Task<WebApplication> InitializeDbContext(this WebApplication app)
         {
             using var scope = app.Services.CreateAsyncScope();

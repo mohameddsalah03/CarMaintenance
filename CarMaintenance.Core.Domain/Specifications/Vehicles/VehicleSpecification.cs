@@ -2,19 +2,17 @@
 
 namespace CarMaintenance.Core.Domain.Specifications.Vehicles
 {
-    public class VehicleSpecifications : BaseSpecifications<Vehicle, int>
+    public class VehicleSpecification : BaseSpecifications<Vehicle, int>
     {
 
-        // Get All Vehicles for specific User
-        public VehicleSpecifications(string userId)
+        public VehicleSpecification(string userId)
             : base(v => v.UserId == userId)
         {
             AddIncludes();
-            AddOrderByDesc(v => v.Id);  // الأحدث أولاً
+            AddOrderByDesc(v => v.Id);  
         }
 
-        // Get Vehicle by ID for specific User (Security Check)
-        public VehicleSpecifications(int id, string userId)
+        public VehicleSpecification(int id, string userId)
             : base(v => v.Id == id && v.UserId == userId)
         {
             AddIncludes();
@@ -22,15 +20,13 @@ namespace CarMaintenance.Core.Domain.Specifications.Vehicles
 
         #region Admin Only
 
-        // Get All Vehicles 
-        public VehicleSpecifications()
+        public VehicleSpecification()
         {
             AddIncludes();
             AddOrderByDesc(v => v.Id);
         }
 
-        // Get Vehicle by ID (No User can Check)
-        public VehicleSpecifications(int id)
+        public VehicleSpecification(int id)
             : base(id)
         {
             AddIncludes();

@@ -39,13 +39,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .IsUnique();
 
             // Relationships
-            // Technician -> Booking (One-to-Many)
             builder.HasMany(t => t.AssignedBookings)
                 .WithOne(b => b.AssignedTechnician)
                 .HasForeignKey(b => b.TechnicianId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Technician -> Review (One-to-Many)
             builder.HasMany(t => t.ReviewsReceived)
                 .WithOne(r => r.Technician)
                 .HasForeignKey(r => r.TechnicianId)

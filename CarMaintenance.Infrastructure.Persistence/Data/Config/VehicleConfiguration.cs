@@ -46,7 +46,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.HasIndex(v => v.UserId);
 
             // Relationships
-            // Vehicle -> Booking (One-to-Many)
             builder.HasMany(v => v.Bookings)
                 .WithOne(b => b.Vehicle)
                 .HasForeignKey(b => b.VehicleId)

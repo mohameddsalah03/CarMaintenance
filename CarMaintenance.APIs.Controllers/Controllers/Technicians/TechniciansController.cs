@@ -1,6 +1,7 @@
 ﻿using CarMaintenance.APIs.Controllers.Controllers.Base;
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
+using CarMaintenance.Shared.DTOs.Technicians.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,66 +9,65 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Technicians
 {
     public class TechniciansController(IServiceManager serviceManager) : BaseApiController
     {
-        // Get all technicians (Admin/Public)
-        [HttpGet] // GET: /api/Technicians
+        #region Public 
+
+        [HttpGet]
         public async Task<ActionResult<IEnumerable<TechniciansDto>>> GetAllTechnicians()
-        {
-            var result = await serviceManager.TechniciansService.GetAllTechniciansAsync();
-            return Ok(result);
-        }
+            => Ok(await serviceManager.TechniciansService.GetAllTechniciansAsync());
 
-        // Get only available technicians
-        [HttpGet("available")] // GET: /api/Technicians/available
+        [HttpGet("available")]
         public async Task<ActionResult<IEnumerable<TechniciansDto>>> GetAvailableTechnicians()
-        {
-            var result = await serviceManager.TechniciansService.GetAvailableTechniciansAsync();
-            return Ok(result);
-        }
+            => Ok(await serviceManager.TechniciansService.GetAvailableTechniciansAsync());
 
-        // Get technician by ID
-        [HttpGet("{id}")] // GET: /api/Technicians/{id}
-        public async Task<ActionResult<TechniciansDto>> GetTechnician([FromRoute] string id)
-        {
-            var result = await serviceManager.TechniciansService.GetTechnicianByIdAsync(id);
-            return Ok(result);
-        }
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TechniciansDto>> GetTechnician(string id)
+            => Ok(await serviceManager.TechniciansService.GetTechnicianByIdAsync(id));
 
-        // Admin Only - Create new technician
+        // AI endpoints
+        [HttpGet("{id}/stats")]
+        public async Task<ActionResult<TechnicianStatsDto>> GetStats(string id)
+            => Ok(await serviceManager.TechniciansService.GetTechnicianStatsAsync(id));
+
+        [HttpGet("{id}/workload")]
+        public async Task<ActionResult<TechnicianWorkloadDto>> GetWorkload(string id)
+            => Ok(await serviceManager.TechniciansService.GetTechnicianWorkloadAsync(id));
+
+        [HttpGet("{id}/rating")]
+        public async Task<ActionResult<TechnicianRatingDto>> GetRating(string id)
+            => Ok(await serviceManager.TechniciansService.GetTechnicianRatingAsync(id));
+
+        #endregion
+
+        #region Admin Only
+
         [Authorize(Roles = "Admin")]
-        [HttpPost] // POST: /api/Technicians
+        [HttpPost]
         public async Task<ActionResult<TechniciansDto>> CreateTechnician([FromBody] CreateTechnicianDto createDto)
         {
             var result = await serviceManager.TechniciansService.CreateTechnicianAsync(createDto);
             return CreatedAtAction(nameof(GetTechnician), new { id = result.Id }, result);
         }
 
-        // Admin/Technician - Update technician info
         [Authorize(Roles = "Admin,Technician")]
-        [HttpPut("{id}")] // PUT: /api/Technicians/{id}
+        [HttpPut("{id}")]
         public async Task<ActionResult<TechniciansDto>> UpdateTechnician(
             [FromRoute] string id,
             [FromBody] TechnicianUpdateDto updateDto)
-        {
-            var result = await serviceManager.TechniciansService.UpdateTechnicianAsync(id, updateDto);
-            return Ok(result);
-        }
+            => Ok(await serviceManager.TechniciansService.UpdateTechnicianAsync(id, updateDto));
 
-        // Admin Only - Delete technician
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")] // DELETE: /api/Technicians/{id}
-        public async Task<ActionResult> DeleteTechnician([FromRoute] string id)
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteTechnician(string id)
         {
             await serviceManager.TechniciansService.DeleteTechnicianAsync(id);
             return NoContent();
         }
 
-        // Admin/Technician - Toggle availability status
         [Authorize(Roles = "Admin,Technician")]
-        [HttpPatch("{id}/toggle-availability")] // PATCH: /api/Technicians/{id}/toggle-availability
-        public async Task<ActionResult<TechniciansDto>> ToggleAvailability([FromRoute] string id)
-        {
-            var result = await serviceManager.TechniciansService.ToggleAvailabilityAsync(id);
-            return Ok(result);
-        }
+        [HttpPatch("{id}/toggle-availability")]
+        public async Task<ActionResult<TechniciansDto>> ToggleAvailability(string id)
+            => Ok(await serviceManager.TechniciansService.ToggleAvailabilityAsync(id));
+
+        #endregion
     }
 }

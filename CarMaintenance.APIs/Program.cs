@@ -1,6 +1,7 @@
 ﻿using CarMaintenance.APIs.Extensions;
 using CarMaintenance.APIs.Middlewares;
 using CarMaintenance.Core.Service;
+using CarMaintenance.Infrastructure;
 using CarMaintenance.Infrastructure.Persistence;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
@@ -88,6 +89,7 @@ namespace CarMaintenance.APIs
             //Extensions Services Layers 
             builder.Services.AddPersistenceServices(builder.Configuration);
             builder.Services.AddApplicationServices(builder.Configuration);
+            builder.Services.AddInfrastructureServices(builder.Configuration);
 
          
             // register for Identity [user manager]
