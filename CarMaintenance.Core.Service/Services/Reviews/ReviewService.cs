@@ -4,6 +4,7 @@ using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Domain.Models.Data.Enums;
 using CarMaintenance.Core.Domain.Specifications.Bookings;
 using CarMaintenance.Core.Domain.Specifications.Reviews;
+using CarMaintenance.Core.Domain.Specifications.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Shared.DTOs.Reviews;
 using CarMaintenance.Shared.Exceptions;
@@ -12,6 +13,15 @@ namespace CarMaintenance.Core.Service.Services.Reviews
 {
     internal class ReviewService(IUnitOfWork _unitOfWork , IMapper _mapper) : IReviewService
     {
+
+        public async Task<IEnumerable<ReviewDto>> GetAllReviewsAsync()
+        {
+            var spec = new ReviewSpecification();
+            var reviews = await _unitOfWork.GetRepo<Review, int>().GetAllWithSpecAsync(spec);
+            return _mapper.Map<IEnumerable<ReviewDto>>(reviews);
+        }
+
+
         public async Task<ReviewDto> CreateReviewAsync(CreateReviewDto dto, string userId)
         {
             var spec = new BookingSpecification(dto.BookingId);
@@ -57,8 +67,6 @@ namespace CarMaintenance.Core.Service.Services.Reviews
 
         }
 
-        
-
         public async Task<ReviewDto?> GetBookingReviewAsync(int bookingId, string userId)
         {
 
@@ -72,6 +80,22 @@ namespace CarMaintenance.Core.Service.Services.Reviews
 
             return _mapper.Map<ReviewDto>(review);
         }
+
+        public async Task<IEnumerable<ReviewDto>> GetMyReceivedReviewsAsync(string userId)
+        {
+            var techSpec = new TechnicianSpecification(userId, byUserId: true);
+            var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
+
+            if (technician is null)
+                throw new UnauthorizedException("لست فنياً معتمداً في النظام");
+
+            var spec = new ReviewSpecification(technician.Id, byTechnician: true);
+            var reviews = await _unitOfWork.GetRepo<Review, int>().GetAllWithSpecAsync(spec);
+            return _mapper.Map<IEnumerable<ReviewDto>>(reviews);
+
+        }
+
+
 
         #region Helper Methods 
         private async Task UpdateTechnicianRatingAsync(string technicianId)

@@ -13,6 +13,15 @@ namespace CarMaintenance.Core.Domain.Specifications.Reviews
         public ReviewSpecification(string technicianId, bool byTechnician)
             : base(r => r.TechnicianId == technicianId)
         {
+            AddIncludes();
+            AddOrderByDesc(r => r.CreatedAt);
+        }
+
+        public ReviewSpecification()
+            : base()
+        {
+            AddIncludes();
+            AddOrderByDesc(r => r.CreatedAt);
         }
 
 

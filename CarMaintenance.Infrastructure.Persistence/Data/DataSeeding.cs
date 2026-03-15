@@ -24,34 +24,15 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
         {
             try
             {
-                // 1. Seed Roles
                 await SeedRolesAsync();
-
-                // 2. Seed Users
                 await SeedUsersAsync();
-
-                // 3. Seed Technicians
                 await SeedTechniciansAsync();
-
-                // 4. Seed Vehicles
                 await SeedVehiclesAsync();
-
-                // 5. Seed Services
                 await SeedServicesAsync();
-
-                // 6. Seed Bookings
                 await SeedBookingsAsync();
-
-                // 7. Seed BookingServices
                 await SeedBookingServicesAsync();
-
-                // 8. Seed AdditionalIssues
                 await SeedAdditionalIssuesAsync();
-
-                // 9. Seed Notifications
                 await SeedNotificationsAsync();
-
-                // 10. Seed Reviews
                 await SeedReviewsAsync();
             }
             catch (Exception ex)
@@ -116,10 +97,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
                 if (technicians != null && technicians.Any())
                 {
-                    // Assume technicians.json contains explicit Ids and valid UserId values.
-                    // Validate that referenced users exist to avoid FK violations.
                     var userIds = _userManager.Users.Select(u => u.Id).ToHashSet();
-                    var validTechnicians = technicians.Where(t => !string.IsNullOrWhiteSpace(t.Id) && userIds.Contains(t.UserId)).ToList();
+                    var validTechnicians = technicians
+                        .Where(t => !string.IsNullOrWhiteSpace(t.Id) && userIds.Contains(t.UserId))
+                        .ToList();
 
                     if (validTechnicians.Any())
                     {
@@ -142,6 +123,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 {
                     PropertyNameCaseInsensitive = true
                 };
+
                 var vehicles = await JsonSerializer.DeserializeAsync<List<Vehicle>>(vehiclesData, options);
 
                 if (vehicles != null && vehicles.Any())
@@ -152,29 +134,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
             }
         }
 
-        /// private async Task SeedServicesAsync()
-        /// {
-        ///     if (!_context.Services.Any())
-        ///     {
-        ///         var servicesPath = Path.Combine(_seedsPath, "services.json");
-        ///         if (!File.Exists(servicesPath)) return;
-        /// 
-        ///         using var servicesData = File.OpenRead(servicesPath);
-        ///         var services = await JsonSerializer.DeserializeAsync<List<Service>>(servicesData);
-        /// 
-        ///         if (services != null && services.Any())
-        ///         {
-        ///             await _context.Services.AddRangeAsync(services);
-        ///             await _context.SaveChangesAsync();
-        ///         }
-        ///     }
-        /// }
-
         private async Task SeedServicesAsync()
         {
             try
             {
-                //  Use the full relative path correctly
                 var servicesPath = Path.Combine(
                     Directory.GetCurrentDirectory(),
                     "..",
@@ -184,9 +147,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                     "services.json"
                 );
 
-                // Normalize the path
                 servicesPath = Path.GetFullPath(servicesPath);
-
                 Console.WriteLine($"🔍 Looking for: {servicesPath}");
 
                 if (!File.Exists(servicesPath))
@@ -198,7 +159,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 Console.WriteLine("📂 Reading services.json...");
 
                 using var servicesData = File.OpenRead(servicesPath);
-
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -214,22 +174,18 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
                 Console.WriteLine($"📋 Found {servicesFromFile.Count} services in file");
 
-                int addedCount = 0;
-                int updatedCount = 0;
-                int skippedCount = 0;
+                int addedCount = 0, updatedCount = 0, skippedCount = 0;
 
                 foreach (var serviceFromFile in servicesFromFile)
                 {
                     if (serviceFromFile.Id <= 0)
                     {
-                        Console.WriteLine($"⚠️ Skipping service with invalid Id: {serviceFromFile.Name ?? "Unknown"}");
                         skippedCount++;
                         continue;
                     }
 
                     if (string.IsNullOrWhiteSpace(serviceFromFile.Name))
                     {
-                        Console.WriteLine($"⚠️ Skipping service with Id {serviceFromFile.Id} - Name is null");
                         skippedCount++;
                         continue;
                     }
@@ -242,7 +198,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                         if (existingService != null)
                         {
                             Console.WriteLine($"🔄 Updating service: {serviceFromFile.Name}");
-
                             existingService.Name = serviceFromFile.Name;
                             existingService.Category = serviceFromFile.Category;
                             existingService.Description = serviceFromFile.Description;
@@ -251,7 +206,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                             existingService.IncludedItems = serviceFromFile.IncludedItems;
                             existingService.ExcludedItems = serviceFromFile.ExcludedItems;
                             existingService.Requirements = serviceFromFile.Requirements;
-
                             _context.Services.Update(existingService);
                             updatedCount++;
                         }
@@ -275,10 +229,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error in SeedServicesAsync: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 throw;
             }
         }
+
         private async Task SeedBookingsAsync()
         {
             if (!_context.Bookings.Any())
@@ -297,16 +251,21 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                         new PaymentStatusJsonConverter()
                     }
                 };
+
                 var bookings = await JsonSerializer.DeserializeAsync<List<Booking>>(bookingsData, options);
 
                 if (bookings != null && bookings.Any())
                 {
-                    // Validate FK references: UserId, VehicleId, TechnicianId (if present)
                     var userIds = _userManager.Users.Select(u => u.Id).ToHashSet();
                     var vehicleIds = _context.Vehicles.Select(v => v.Id).ToHashSet();
                     var technicianIds = _context.Technicians.Select(t => t.Id).ToHashSet();
 
-                    var validBookings = bookings.Where(b => userIds.Contains(b.UserId) && vehicleIds.Contains(b.VehicleId) && (string.IsNullOrWhiteSpace(b.TechnicianId) || technicianIds.Contains(b.TechnicianId))).ToList();
+                    var validBookings = bookings
+                        .Where(b =>
+                            userIds.Contains(b.UserId) &&
+                            vehicleIds.Contains(b.VehicleId) &&
+                            (string.IsNullOrWhiteSpace(b.TechnicianId) || technicianIds.Contains(b.TechnicianId)))
+                        .ToList();
 
                     if (validBookings.Any())
                     {
@@ -325,16 +284,14 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 if (!File.Exists(bookingServicesPath)) return;
 
                 using var bookingServicesData = File.OpenRead(bookingServicesPath);
-
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
-                    Converters =
-                    {
-                        new BookingStatusJsonConverter(),
-                    }
+                    Converters = { new BookingStatusJsonConverter() }
                 };
-                var bookingServices = await JsonSerializer.DeserializeAsync<List<BookingService>>(bookingServicesData, options);
+
+                var bookingServices = await JsonSerializer
+                    .DeserializeAsync<List<BookingService>>(bookingServicesData, options);
 
                 if (bookingServices != null && bookingServices.Any())
                 {
@@ -352,7 +309,15 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 if (!File.Exists(path)) return;
 
                 using var data = File.OpenRead(path);
-                var additionalIssues = await JsonSerializer.DeserializeAsync<List<AdditionalIssue>>(data);
+
+                // ✅ Fix: أضفنا options
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var additionalIssues = await JsonSerializer
+                    .DeserializeAsync<List<AdditionalIssue>>(data, options);
 
                 if (additionalIssues != null && additionalIssues.Any())
                 {
@@ -370,7 +335,13 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 if (!File.Exists(path)) return;
 
                 using var data = File.OpenRead(path);
-                var notifications = await JsonSerializer.DeserializeAsync<List<Notification>>(data);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var notifications = await JsonSerializer
+                    .DeserializeAsync<List<Notification>>(data, options);
 
                 if (notifications != null && notifications.Any())
                 {
@@ -388,7 +359,13 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 if (!File.Exists(path)) return;
 
                 using var data = File.OpenRead(path);
-                var reviews = await JsonSerializer.DeserializeAsync<List<Review>>(data);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var reviews = await JsonSerializer
+                    .DeserializeAsync<List<Review>>(data, options);
 
                 if (reviews != null && reviews.Any())
                 {

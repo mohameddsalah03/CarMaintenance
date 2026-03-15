@@ -4,6 +4,7 @@
     {
         Pending,
         InProgress,
+        WaitingClientApproval,
         Completed,
         Cancelled,
     }

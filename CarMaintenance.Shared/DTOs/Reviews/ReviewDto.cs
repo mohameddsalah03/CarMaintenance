@@ -6,6 +6,7 @@
         public int ServiceRating { get; set; }
         public int TechnicianRating { get; set; }
         public string? Comment { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         // Booking Info
         public int BookingId { get; set; }

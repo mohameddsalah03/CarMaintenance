@@ -50,9 +50,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Technicians
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpPut("{id}")]
-        public async Task<ActionResult<TechniciansDto>> UpdateTechnician(
-            [FromRoute] string id,
-            [FromBody] TechnicianUpdateDto updateDto)
+        public async Task<ActionResult<TechniciansDto>> UpdateTechnician(string id,[FromBody] TechnicianUpdateDto updateDto)
             => Ok(await serviceManager.TechniciansService.UpdateTechnicianAsync(id, updateDto));
 
         [Authorize(Roles = "Admin")]

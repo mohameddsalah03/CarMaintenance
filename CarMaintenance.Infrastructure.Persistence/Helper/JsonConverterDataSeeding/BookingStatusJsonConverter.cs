@@ -13,6 +13,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Helper.JsonConverterDataSeed
             {
                 "pending" => BookingStatus.Pending,
                 "inprogress" => BookingStatus.InProgress,
+                "waitingclientapproval" => BookingStatus.WaitingClientApproval,
                 "completed" => BookingStatus.Completed,
                 "cancelled" => BookingStatus.Cancelled,
                 _ => BookingStatus.Pending

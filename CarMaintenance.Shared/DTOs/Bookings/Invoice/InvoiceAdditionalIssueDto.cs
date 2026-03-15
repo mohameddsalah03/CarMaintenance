@@ -4,5 +4,6 @@
     {
         public string Title { get; set; } = null!;
         public decimal EstimatedCost { get; set; }
+
     }
 }

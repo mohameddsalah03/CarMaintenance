@@ -25,5 +25,21 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Reviews
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return Ok(await serviceManager.ReviewService.GetBookingReviewAsync(bookingId, userId!));
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("all")]
+        public async Task<ActionResult<IEnumerable<ReviewDto>>> GetAllReviews()
+            => Ok(await serviceManager.ReviewService.GetAllReviewsAsync());
+      
+        [Authorize(Roles = "Technician")]
+        [HttpGet("my-reviews")]
+        public async Task<ActionResult<IEnumerable<ReviewDto>>> GetMyReceivedReviews()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var reviews = await serviceManager.ReviewService.GetMyReceivedReviewsAsync(userId!);
+            return Ok(reviews);
+        }
+
+
     }
 }

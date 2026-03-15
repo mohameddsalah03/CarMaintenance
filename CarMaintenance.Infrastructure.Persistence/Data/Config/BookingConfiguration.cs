@@ -97,11 +97,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
-            builder.HasOne(b => b.Review)
-                .WithOne(r => r.Booking)
-                .HasForeignKey<Review>(r => r.BookingId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .IsRequired();
 
             builder.HasOne(b => b.User)
             .WithMany(u => u.Bookings)

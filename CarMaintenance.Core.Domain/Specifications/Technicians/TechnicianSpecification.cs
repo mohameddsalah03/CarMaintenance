@@ -23,6 +23,15 @@ namespace CarMaintenance.Core.Domain.Specifications.Technicians
         {
             AddIncludes();
         }
+       
+        //  Get Technician by ApplicationUser.Id (from JWT)
+        public TechnicianSpecification(string userId, bool byUserId)
+            : base(t => t.UserId == userId)
+        {
+            AddIncludes();
+        }
+
+
 
         protected override void AddIncludes()
         {
