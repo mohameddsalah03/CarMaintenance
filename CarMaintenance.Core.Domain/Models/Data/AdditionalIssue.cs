@@ -7,6 +7,7 @@ namespace CarMaintenance.Core.Domain.Models.Data
         public string Title { get; set; } = null!;
         public decimal EstimatedCost { get; set; }
         public bool IsApproved { get; set; }
+        public string? Description { get; set; }
 
         // Foreign Key
         public int BookingId { get; set; }

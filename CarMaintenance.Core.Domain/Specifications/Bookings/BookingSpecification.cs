@@ -63,8 +63,12 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
             Includes.Add(e => e.BookingServices);
             Includes.Add(e => e.Review!);
             Includes.Add(e => e.Vehicle);
-            AddThenInclude($"{nameof(Booking.BookingServices)}.{nameof(BookingService.Service)}");
 
+            AddThenInclude($"{nameof(Booking.BookingServices)}.{nameof(BookingService.Service)}");
+            AddThenInclude($"{nameof(Booking.AssignedTechnician)}.{nameof(Technician.User)}");
+            // for ReviewSummaryDto
+            AddThenInclude($"{nameof(Booking.Review)}.{nameof(Review.User)}");
+            AddThenInclude($"{nameof(Booking.Review)}.{nameof(Review.Technician)}.{nameof(Technician.User)}");
         }
 
     }

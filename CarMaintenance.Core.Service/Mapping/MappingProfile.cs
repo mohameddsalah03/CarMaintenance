@@ -5,6 +5,7 @@ using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
 using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.Invoice;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
+using CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails;
 using CarMaintenance.Shared.DTOs.Reviews;
 using CarMaintenance.Shared.DTOs.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
@@ -65,14 +66,19 @@ namespace CarMaintenance.Core.Service.Mapping
                     src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
                 .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src =>
                     src.AssignedTechnician != null ? src.AssignedTechnician.Id : null)) 
+                .ForMember(dest => dest.TechnicianSpecialization, opt => opt.MapFrom(src =>
+                    src.AssignedTechnician != null ? src.AssignedTechnician.Specialization : null)) 
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
                 .ForMember(dest => dest.BookingServiceDetailsDtos, opt => opt.MapFrom(src => src.BookingServices));
+            
+            CreateMap<Review, ReviewSummaryDto>();
 
             CreateMap<Booking, BookingDetailsDto>()
                 .IncludeBase<Booking, BookingDto>()
-                .ForMember(dest => dest.AdditionalIssueDtos, opt => opt.MapFrom(src => src.AdditionalIssues));
+                .ForMember(dest => dest.AdditionalIssueDtos, opt => opt.MapFrom(src => src.AdditionalIssues))
+                .ForMember(dest => dest.Review, opt => opt.MapFrom(src => src.Review));
 
             CreateMap<BookingService, BookingServiceDetailsDto>()
                 .ForMember(dest => dest.ServiceName, opt => opt.MapFrom(src => src.Service.Name))

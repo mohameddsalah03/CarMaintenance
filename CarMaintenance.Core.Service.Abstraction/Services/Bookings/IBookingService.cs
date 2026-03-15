@@ -3,6 +3,7 @@ using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
 using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.Invoice;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
+using CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails;
 using CarMaintenance.Shared.DTOs.Common;
 
 namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
@@ -18,9 +19,9 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
 
 
         //Technicians
-        Task<Pagination<BookingDto>> GetMyAssignedBookingsAsync(BookingSpecParams specParams, string technicianId);
-        Task<BookingDto> UpdateBookingStatusAsync(int id, UpdateBookingStatusDto statusDto, string technicianId);
-        Task<AdditionalIssueDto> AddAdditionalIssueAsync(int bookingId, AddAdditionalIssueDto issueDto , string technicianId);
+        Task<Pagination<BookingDto>> GetMyAssignedBookingsAsync(BookingSpecParams specParams, string userId);
+        Task<BookingDto> UpdateBookingStatusAsync(int id, UpdateBookingStatusDto statusDto, string userId);
+        Task<AdditionalIssueDto> AddAdditionalIssueAsync(int bookingId, AddAdditionalIssueDto issueDto , string userId);
 
 
         //Admin 

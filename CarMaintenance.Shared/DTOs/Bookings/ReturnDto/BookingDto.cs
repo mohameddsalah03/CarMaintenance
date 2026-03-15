@@ -26,8 +26,9 @@
         public string PlateNumber { get; set; } = null!;
 
         // Technician Info (optional)
-        public string TechnicianId { get; set; } = null!;
-        public string TechnicianName { get; set; } = null!;
+        public string? TechnicianId { get; set; } 
+        public string? TechnicianName { get; set; }
+        public string? TechnicianSpecialization { get; set; }
 
         // Services
         public List<BookingServiceDetailsDto> BookingServiceDetailsDtos { get; set; } = new();

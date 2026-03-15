@@ -1,7 +1,6 @@
 ﻿using CarMaintenance.Shared.DTOs.Auth;
 using CarMaintenance.Shared.Exceptions;
 
-
 namespace CarMaintenance.APIs.Middlewares
 {
     public class ExceptionHandlerMiddleware
@@ -20,7 +19,6 @@ namespace CarMaintenance.APIs.Middlewares
             try
             {
                 await _next.Invoke(context);
-
                 await HandleNotFoundEndpointAsync(context);
             }
             catch (Exception ex)
@@ -32,16 +30,10 @@ namespace CarMaintenance.APIs.Middlewares
 
         private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
-            if (context.Response.HasStarted)
-            {
-                return;
-            }
+            if (context.Response.HasStarted) return;
 
             context.Response.Clear();
             context.Response.ContentType = "application/json";
-
-
-
             context.Response.StatusCode = ex switch
             {
                 NotFoundException => StatusCodes.Status404NotFound,
@@ -53,7 +45,8 @@ namespace CarMaintenance.APIs.Middlewares
             var response = new ErrorToReturn
             {
                 StatusCode = context.Response.StatusCode,
-                ErrorMessage = ex.Message
+                // ✅ هيظهر الـ inner exception الحقيقي
+                ErrorMessage = ex.InnerException?.Message ?? ex.Message
             };
 
             await context.Response.WriteAsJsonAsync(response);
@@ -64,6 +57,7 @@ namespace CarMaintenance.APIs.Middlewares
             if (context.Response.HasStarted) return;
 
             var endpoint = context.GetEndpoint();
+
             if (endpoint == null && context.Response.StatusCode == StatusCodes.Status404NotFound)
             {
                 context.Response.ContentType = "application/json";
@@ -72,11 +66,8 @@ namespace CarMaintenance.APIs.Middlewares
                     StatusCode = StatusCodes.Status404NotFound,
                     ErrorMessage = $"End Point {context.Request.Path} is Not Found"
                 };
-
                 await context.Response.WriteAsJsonAsync(response);
                 return;
-
-
             }
 
             if (context.Response.StatusCode == StatusCodes.Status404NotFound)
@@ -87,7 +78,6 @@ namespace CarMaintenance.APIs.Middlewares
                     StatusCode = StatusCodes.Status404NotFound,
                     ErrorMessage = $"End Point {context.Request.Path} is Not Found"
                 };
-
                 await context.Response.WriteAsJsonAsync(response);
             }
         }
