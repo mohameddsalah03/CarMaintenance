@@ -10,9 +10,11 @@ namespace CarMaintenance.APIs.Extensions
 {
     public static class IdentityExtensions
     {
-        public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddIdentityServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
-            services.Configure<JwtSettings>(configuration.GetSection("jwtSttings"));
+            services.Configure<JwtSettings>(configuration.GetSection("jwtSettings"));
 
             services.AddIdentity<ApplicationUser, IdentityRole>(identityOptions =>
             {
@@ -29,47 +31,38 @@ namespace CarMaintenance.APIs.Extensions
             .AddEntityFrameworkStores<CarDbContext>()
             .AddDefaultTokenProviders();
 
-
-            var authBuilder = services.AddAuthentication(authenticationOptions =>
+            services.AddAuthentication(authOptions =>
             {
-                authenticationOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                authenticationOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            });
-
-            authBuilder.AddJwtBearer(configureOptions =>
+                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(jwtOptions =>
             {
-                configureOptions.TokenValidationParameters = new TokenValidationParameters()
+                jwtOptions.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateAudience = true,
                     ValidateIssuer = true,
                     ValidateIssuerSigningKey = true,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
-                    ValidIssuer = configuration["jwtSttings:Issuer"],
-                    ValidAudience = configuration["jwtSttings:Audience"],
+                    ValidIssuer = configuration["jwtSettings:Issuer"],
+                    ValidAudience = configuration["jwtSettings:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(configuration["jwtSttings:Key"]!))
+                        Encoding.UTF8.GetBytes(configuration["jwtSettings:Key"]!))
                 };
 
-                // Authorization Header 
-                configureOptions.Events = new JwtBearerEvents
+                jwtOptions.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
-                        // read from Authorization Header  only 
                         var authHeader = context.Request.Headers["Authorization"].ToString();
                         if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
-                        {
-                            context.Token = authHeader.Substring("Bearer ".Length).Trim();
-                        }
+                            context.Token = authHeader["Bearer ".Length..].Trim();
                         return Task.CompletedTask;
                     }
                 };
-            });
-
-
-
-            authBuilder.AddGoogle(googleOptions =>
+            })
+            .AddGoogle(googleOptions =>
             {
                 googleOptions.ClientId = configuration["Authentication:Google:ClientId"]!;
                 googleOptions.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;

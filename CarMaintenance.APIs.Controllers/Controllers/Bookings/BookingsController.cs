@@ -43,7 +43,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpGet("{id}")] // GET: /api/Bookings/{id}
+        [HttpGet("{id:int}")] // GET: /api/Bookings/{id}
         public async Task<ActionResult<BookingDetailsDto>> GetBookingDetails(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -52,7 +52,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpPatch("{id}/cancel")] // PATCH: /api/Bookings/{id}/cancel
+        [HttpPatch("{id:int}/cancel")] // PATCH: /api/Bookings/{id}/cancel
         public async Task<ActionResult> CancelBooking(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -61,17 +61,19 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpPatch("additional-issues/{issueId}/approve")]
+        [HttpPatch("additional-issues/{issueId:int}/approve")]
         public async Task<ActionResult> ApproveAdditionalIssue(int issueId,[FromBody] ApproveAdditionalIssueDto approveDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             approveDto.IssueId = issueId;
-            await _serviceManager.BookingService.ApproveAdditionalIssueAsync(approveDto, userId!);
-            return Ok();
+            await _serviceManager.BookingService.ApproveAdditionalIssueAsync(approveDto, userId);
+
+            var message = approveDto.IsApproved? "تمت الموافقة على المشكلة الإضافية بنجاح": "تم رفض المشكلة الإضافية";
+            return Ok(new { message });
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpGet("{id}/invoice")]
+        [HttpGet("{id:int}/invoice")]
         public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -90,7 +92,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("{id}/assign-technician")]
+        [HttpPost("{id:int}/assign-technician")]
         public async Task<ActionResult<BookingDto>> AssignTechnician(int id)
             => Ok(await _serviceManager.BookingService.AssignTechnicianAsync(id));
         
@@ -109,7 +111,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Technician")]
-        [HttpPatch("{id}/update-status")]
+        [HttpPatch("{id:int}/update-status")]
         public async Task<ActionResult<BookingDto>> UpdateBookingStatus(int id,[FromBody] UpdateBookingStatusDto statusDto)
         {
             var technicianId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -118,7 +120,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Technician")]
-        [HttpPost("{id}/additional-issues")]
+        [HttpPost("{id:int}/additional-issues")]
         public async Task<ActionResult<AdditionalIssueDto>> AddAdditionalIssue(int id,[FromBody] AddAdditionalIssueDto issueDto)
         {
             var technicianId = User.FindFirstValue(ClaimTypes.NameIdentifier);

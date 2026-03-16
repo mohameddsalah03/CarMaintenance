@@ -7,7 +7,10 @@ namespace CarMaintenance.Core.Domain.Models.Data
         public string Specialization { get; set; } = null!;
         public decimal Rating { get; set; }
         public bool IsAvailable { get; set; }
-        public string UserId { get; set; } = null!; // FK to User
+        public int ExperienceYears { get; set; }
+
+        // FK to User
+        public string UserId { get; set; } = null!; 
 
         // Navigation Properties
         public ApplicationUser User { get; set; } = null!;

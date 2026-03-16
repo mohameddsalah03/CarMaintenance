@@ -34,6 +34,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasDefaultValue(true)
                 .IsRequired();
 
+            builder.Property(t => t.ExperienceYears)
+            .IsRequired()
+            .HasDefaultValue(0);
+
             // Indexes
             builder.HasIndex(t => t.Id)
                 .IsUnique();

@@ -11,7 +11,6 @@ namespace CarMaintenance.Shared.DTOs.Bookings
         [Required(ErrorMessage = "الحالة مطلوبة")]
         public string Status { get; set; } = null!; // "InProgress" or "Completed"
 
-        //public string? Notes { get; set; }
-
+        public string? TechnicianReport { get; set; }
     }
 }

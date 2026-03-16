@@ -19,7 +19,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
         }
 
         [Authorize]
-        [HttpGet("{id}")] // GET: /api/Vehicles/9
+        [HttpGet("{id:int}")] // GET: /api/Vehicles/9
         public async Task<ActionResult<VehicleDto>> GetVehicle([FromRoute] int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -37,7 +37,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
         }
 
         [Authorize]
-        [HttpPut("{id}")] // PUT: /api/Vehicles/1
+        [HttpPut("{id:int}")] // PUT: /api/Vehicles/1
         public async Task<ActionResult<VehicleDto>> UpdateVehicle(
             [FromRoute] int id,
             [FromBody] UpdateVehicleDto updateDto)
@@ -49,7 +49,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Vehicles
         }
 
         [Authorize]
-        [HttpDelete("{id}")] // DELETE: /api/Vehicles/1
+        [HttpDelete("{id:int}")] // DELETE: /api/Vehicles/1
         public async Task<ActionResult> DeleteVehicle([FromRoute] int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

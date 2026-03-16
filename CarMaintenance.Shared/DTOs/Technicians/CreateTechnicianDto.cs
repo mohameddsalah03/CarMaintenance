@@ -25,5 +25,12 @@ namespace CarMaintenance.Shared.DTOs.Technicians
         [Required]
         [MaxLength(200)]
         public required string Specialization { get; set; }
+
+        [Required]
+        [Range(0, 50, ErrorMessage = "سنوات الخبرة يجب أن تكون بين 0 و 50")]
+        public int ExperienceYears { get; set; }
+
+
+
     }
 }

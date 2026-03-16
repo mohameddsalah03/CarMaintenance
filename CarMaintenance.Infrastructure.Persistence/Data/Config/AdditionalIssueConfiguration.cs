@@ -29,6 +29,14 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasColumnType("decimal(18,2)")
                 .IsRequired();
 
+
+            builder.Property(ai => ai.EstimatedDurationMinutes)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            builder.Property(ai => ai.CreatedAt)
+                .IsRequired();
+
             builder.Property(ai => ai.IsApproved)
                 .HasDefaultValue(false)
                 .IsRequired();

@@ -87,6 +87,7 @@ namespace CarMaintenance.Core.Service.Services.Technicians
                 Id = Guid.NewGuid().ToString(),
                 UserId = user.Id,
                 Specialization = createDto.Specialization,
+                ExperienceYears = createDto.ExperienceYears,
                 Rating = 0,
                 IsAvailable = true
             };
@@ -123,7 +124,8 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             technician.Specialization = updateDto.Specialization;
             if (updateDto.IsAvailable.HasValue)
                 technician.IsAvailable = updateDto.IsAvailable.Value;
-
+            if (updateDto.ExperienceYears.HasValue)
+                technician.ExperienceYears = updateDto.ExperienceYears.Value;
             var user = technician.User;
 
             if (!string.IsNullOrEmpty(updateDto.DisplayName))

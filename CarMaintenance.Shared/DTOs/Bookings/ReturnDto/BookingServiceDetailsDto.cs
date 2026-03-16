@@ -7,5 +7,8 @@
         public decimal ServicePrice { get; set; }
         public int Duration { get; set; }
         public string Status { get; set; } = null!;
+
+        public string ServiceDescription { get; set; } = null!; 
+        public string ServiceCategory { get; set; } = null!;
     }
 }

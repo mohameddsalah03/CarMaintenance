@@ -7,6 +7,8 @@
         public decimal Rating { get; set; }
         public bool IsAvailable { get; set; }
 
+        public int ExperienceYears { get; set; }
+
         // User Info
         public string UserId { get; set; } = null!;
         public string UserName { get; set; } = null!;

@@ -10,7 +10,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Reviews
     public class ReviewsController(IServiceManager serviceManager) : BaseApiController
     {
         [Authorize(Roles = "Customer")]
-        [HttpPost("{bookingId}")]
+        [HttpPost("{bookingId:int}")]
         public async Task<ActionResult<ReviewDto>> CreateReview(int bookingId,[FromBody] CreateReviewDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -19,7 +19,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Reviews
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpGet("{bookingId}")]
+        [HttpGet("{bookingId:int}")]
         public async Task<ActionResult<ReviewDto?>> GetBookingReview(int bookingId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

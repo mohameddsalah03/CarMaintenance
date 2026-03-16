@@ -8,7 +8,9 @@ namespace CarMaintenance.APIs.Middlewares
         private readonly RequestDelegate _next;
         private readonly ILogger<ExceptionHandlerMiddleware> _logger;
 
-        public ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionHandlerMiddleware> logger)
+        public ExceptionHandlerMiddleware(
+            RequestDelegate next,
+            ILogger<ExceptionHandlerMiddleware> logger)
         {
             _next = next;
             _logger = logger;
@@ -23,7 +25,7 @@ namespace CarMaintenance.APIs.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unhandled exception caught by middleware");
+                _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
                 await HandleExceptionAsync(context, ex);
             }
         }
@@ -34,20 +36,36 @@ namespace CarMaintenance.APIs.Middlewares
 
             context.Response.Clear();
             context.Response.ContentType = "application/json";
+
             context.Response.StatusCode = ex switch
             {
                 NotFoundException => StatusCodes.Status404NotFound,
-                UnauthorizedException => StatusCodes.Status403Forbidden,
+                UnauthorizedException => StatusCodes.Status401Unauthorized,  
+                ForbiddenException => StatusCodes.Status403Forbidden,    
+                ValidationException ve => StatusCodes.Status400BadRequest,
                 BadRequestException => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError,
             };
 
-            var response = new ErrorToReturn
+            object response;
+
+            if (ex is ValidationException validationEx)
             {
-                StatusCode = context.Response.StatusCode,
-                // ✅ هيظهر الـ inner exception الحقيقي
-                ErrorMessage = ex.InnerException?.Message ?? ex.Message
-            };
+                response = new
+                {
+                    context.Response.StatusCode,
+                    ErrorMessage = validationEx.Message,
+                    validationEx.Errors
+                };
+            }
+            else
+            {
+                response = new ErrorToReturn
+                {
+                    StatusCode = context.Response.StatusCode,
+                    ErrorMessage = ex.InnerException?.Message ?? ex.Message
+                };
+            }
 
             await context.Response.WriteAsJsonAsync(response);
         }
@@ -57,26 +75,13 @@ namespace CarMaintenance.APIs.Middlewares
             if (context.Response.HasStarted) return;
 
             var endpoint = context.GetEndpoint();
-
-            if (endpoint == null && context.Response.StatusCode == StatusCodes.Status404NotFound)
+            if (endpoint is null && context.Response.StatusCode == StatusCodes.Status404NotFound)
             {
                 context.Response.ContentType = "application/json";
                 var response = new ErrorToReturn
                 {
                     StatusCode = StatusCodes.Status404NotFound,
-                    ErrorMessage = $"End Point {context.Request.Path} is Not Found"
-                };
-                await context.Response.WriteAsJsonAsync(response);
-                return;
-            }
-
-            if (context.Response.StatusCode == StatusCodes.Status404NotFound)
-            {
-                context.Response.ContentType = "application/json";
-                var response = new ErrorToReturn
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    ErrorMessage = $"End Point {context.Request.Path} is Not Found"
+                    ErrorMessage = $"Endpoint '{context.Request.Path}' was not found."
                 };
                 await context.Response.WriteAsJsonAsync(response);
             }
