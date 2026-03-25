@@ -2,8 +2,10 @@
 using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Service.Abstraction.Common.Infrastructure;
 using CarMaintenance.Core.Service.Abstraction.Services;
+using CarMaintenance.Core.Service.Abstraction.Services.Admin;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
+using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
@@ -26,6 +28,8 @@ namespace CarMaintenance.Core.Service.Services
         private readonly Lazy<IBookingService> _bookingService;
         private readonly Lazy<IAiTechnicianService> _aiTechnicianService;
         private readonly Lazy<IReviewService> _reviewService;
+        private readonly Lazy<INotificationService> _notificationService;
+        private readonly Lazy<IAdminService> _adminService;
 
         public ServiceManager(
             IUnitOfWork unitOfWork,
@@ -50,6 +54,11 @@ namespace CarMaintenance.Core.Service.Services
             _aiTechnicianService = new Lazy<IAiTechnicianService>(() => _serviceProvider.GetRequiredService<IAiTechnicianService>());
             
             _reviewService = new Lazy<IReviewService>(() =>new ReviewService(_unitOfWork, _mapper));
+
+            _notificationService = new Lazy<INotificationService>(() => _serviceProvider.GetRequiredService<INotificationService>());
+            
+            _adminService = new Lazy<IAdminService>(() => _serviceProvider.GetRequiredService<IAdminService>());
+
         }
 
         public IServiceService ServiceService => _serviceService.Value;
@@ -59,5 +68,9 @@ namespace CarMaintenance.Core.Service.Services
         public IBookingService BookingService => _bookingService.Value;
         public IAiTechnicianService AiTechnicianService => _aiTechnicianService.Value;
         public IReviewService ReviewService => _reviewService.Value;
+
+        public INotificationService NotificationService => _notificationService.Value;
+
+        public IAdminService AdminService => _adminService.Value;
     }
 }

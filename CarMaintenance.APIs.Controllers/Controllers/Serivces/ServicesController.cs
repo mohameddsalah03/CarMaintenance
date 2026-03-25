@@ -20,7 +20,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
         }
 
         [AllowAnonymous]
-        [HttpGet("{id}")] // GET: /api/Services/1
+        [HttpGet("{id:int}")] // GET: /api/Services/1
         public async Task<ActionResult<ServiceDto>> GetService(int id)
         {
             var service = await serviceManager.ServiceService.GetServiceByIdAsync(id);
@@ -28,7 +28,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
         }
 
         [AllowAnonymous]
-        [HttpGet("{id}/details")] // GET: /api/Services/1/details
+        [HttpGet("{id:int}/details")] // GET: /api/Services/1/details
         public async Task<ActionResult<ServiceDetailsDto>> GetServiceDetails(int id)
         {
             var serviceDetails = await serviceManager.ServiceService.GetServiceDetailsAsync(id);
@@ -49,7 +49,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("{id}")] // PUT: /api/Services/1
+        [HttpPut("{id:int}")] // PUT: /api/Services/1
         public async Task<ActionResult<ServiceDto>> UpdateService(
              int id,
             [FromBody] UpdateServiceDto updateDto)
@@ -60,7 +60,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")] // DELETE: /api/Services/1
+        [HttpDelete("{id:int}")] // DELETE: /api/Services/1
         public async Task<ActionResult> DeleteService( int id)
         {
             await serviceManager.ServiceService.DeleteServiceAsync(id);

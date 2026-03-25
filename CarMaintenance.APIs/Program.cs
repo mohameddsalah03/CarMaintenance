@@ -1,6 +1,7 @@
 ﻿using CarMaintenance.APIs.Extensions;
 using CarMaintenance.APIs.Middlewares;
 using CarMaintenance.Core.Service;
+using CarMaintenance.Core.Service.Hubs;
 using CarMaintenance.Infrastructure;
 using CarMaintenance.Infrastructure.Persistence;
 using Microsoft.OpenApi.Models;
@@ -14,9 +15,7 @@ namespace CarMaintenance.APIs
         {
             var builder = WebApplication.CreateBuilder(args);
 
-
-            #region Configure Services [Container For DI]
-
+            #region Configure Services
 
             builder.Services.AddControllers()
                 .AddApplicationPart(typeof(Controllers.AssemblyInformation).Assembly)
@@ -24,10 +23,8 @@ namespace CarMaintenance.APIs
                 {
                     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-
                 });
 
-            //Reauired Services For Swagger
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -35,24 +32,18 @@ namespace CarMaintenance.APIs
                 {
                     Title = "Car Maintenance API",
                     Version = "v1",
-                    Description = "Car Maintenance Platform - Graduation Project",
-                    Contact = new OpenApiContact
-                    {
-                        Name = "Graduation FIXORA"
-                    }
+                    Description = "Car Maintenance Platform - Graduation Project"
                 });
 
-                // JWT Authentication in Swagger
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
+                    Description = "JWT Authorization header using the Bearer scheme.",
                     Name = "Authorization",
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
 
-                // إضافة Security Requirement
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
@@ -62,52 +53,47 @@ namespace CarMaintenance.APIs
                             {
                                 Type = ReferenceType.SecurityScheme,
                                 Id = "Bearer"
-                            },
-                            Scheme = "oauth2",
-                            Name = "Bearer",
-                            In = ParameterLocation.Header
+                            }
                         },
                         new List<string>()
                     }
                 });
             });
 
+            var allowedOrigins = builder.Configuration
+                .GetSection("AllowedOrigins")
+                .Get<string[]>();
 
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
-            // Configure CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins(allowedOrigins!) // من appsettings.json
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
+                    policy
+                        .WithOrigins(allowedOrigins!)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        // Required for SignalR WebSocket connections
+                        .AllowCredentials();
                 });
             });
 
-
-            //Extensions Services Layers 
             builder.Services.AddPersistenceServices(builder.Configuration);
             builder.Services.AddApplicationServices(builder.Configuration);
             builder.Services.AddInfrastructureServices(builder.Configuration);
-
-         
-            // register for Identity [user manager]
             builder.Services.AddIdentityServices(builder.Configuration);
 
+            //Register SignalR
+            builder.Services.AddSignalR();
 
             #endregion
-
 
             var app = builder.Build();
 
-            #region Database Initializer 
-
+            #region Database Initializer
             await app.InitializeDbContext();
-
             #endregion
 
-            #region Configure Kestral Middlewares (Pipelines)
+            #region Middleware Pipeline
 
             app.UseMiddleware<ExceptionHandlerMiddleware>();
 
@@ -118,20 +104,19 @@ namespace CarMaintenance.APIs
             }
 
             app.UseHttpsRedirection();
-
             app.UseRouting();
-            app.UseCors("AllowFrontend"); 
+            app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
 
-
             app.MapControllers();
+
+            //  Map the SignalR Hub endpoint
+            app.MapHub<NotificationHub>("/hubs/notifications");
 
             #endregion
 
             app.Run();
-
-
         }
     }
 }

@@ -31,7 +31,7 @@ namespace CarMaintenance.Core.Service.Services.Reviews
                 throw new NotFoundException(nameof(Booking), dto.BookingId);
 
             if (booking.UserId != userId)
-                throw new UnauthorizedException("ليس لديك صلاحية لتقييم هذا الحجز");
+                throw new ForbiddenException("ليس لديك صلاحية لتقييم هذا الحجز");
 
             if (booking.Status != BookingStatus.Completed)
                 throw new BadRequestException("لا يمكن تقييم حجز غير مكتمل");
@@ -76,7 +76,7 @@ namespace CarMaintenance.Core.Service.Services.Reviews
             if (review is null) return null;
 
             if (review.UserId != userId)
-                throw new UnauthorizedException("ليس لديك صلاحية لعرض هذا التقييم");
+                throw new ForbiddenException("ليس لديك صلاحية لعرض هذا التقييم");
 
             return _mapper.Map<ReviewDto>(review);
         }
@@ -87,7 +87,7 @@ namespace CarMaintenance.Core.Service.Services.Reviews
             var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
 
             if (technician is null)
-                throw new UnauthorizedException("لست فنياً معتمداً في النظام");
+                throw new ForbiddenException("لست فنياً معتمداً في النظام");
 
             var spec = new ReviewSpecification(technician.Id, byTechnician: true);
             var reviews = await _unitOfWork.GetRepo<Review, int>().GetAllWithSpecAsync(spec);

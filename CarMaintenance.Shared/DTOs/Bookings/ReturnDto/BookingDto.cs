@@ -29,6 +29,7 @@
         public string? TechnicianId { get; set; } 
         public string? TechnicianName { get; set; }
         public string? TechnicianSpecialization { get; set; }
+        public decimal? TechnicianRate { get; set; }
 
         // Services
         public List<BookingServiceDetailsDto> BookingServiceDetailsDtos { get; set; } = new();

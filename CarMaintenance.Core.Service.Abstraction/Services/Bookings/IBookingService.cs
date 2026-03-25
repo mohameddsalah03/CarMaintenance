@@ -28,6 +28,9 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
         Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams);
         Task<BookingDto> AssignTechnicianAsync(int bookingId);
 
+        // 🔹 ADDED - Technician booking details endpoint
+        Task<BookingDetailsDto> GetBookingDetailsForTechnicianAsync(int id, string userId);
+
 
         // Additional Issues
         Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto approveAdditionalIssue, string userId);

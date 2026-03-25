@@ -59,11 +59,13 @@ namespace CarMaintenance.Core.Service.Services.Auth
         }
         public async Task<UserDto> RegisterAsync(RegisterDto registerDto)
         {
+            var userName = GenerateUserName(registerDto.Email);
+
             var user = new ApplicationUser()
             {
                 DisplayName = registerDto.DisplayName,
                 Email = registerDto.Email,
-                UserName = registerDto.UserName,
+                UserName = userName,
                 PhoneNumber = registerDto.PhoneNumber,
             };
 
@@ -307,6 +309,14 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
                 Roles = roles
             };
+        }
+
+        private static string GenerateUserName(string email)
+        {
+            // ahmed@example.com → ahmed_a3f9c2 (unique)
+            var localPart = email.Split('@')[0];
+            var uniqueSuffix = Guid.NewGuid().ToString("N")[..6];
+            return $"{localPart}_{uniqueSuffix}".ToLower();
         }
 
     }

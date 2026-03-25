@@ -34,6 +34,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
             builder.Property(v => v.PlateNumber)
                 .HasMaxLength(20)
                 .IsRequired();
+           
+            builder.Property(v => v.LastMaintenanceDate)
+            .IsRequired(false);
 
             builder.Property(v => v.UserId)
                 .HasMaxLength(450)

@@ -22,7 +22,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("CarMaintenance.Core.Domain.Models.Data.AdditionalIssue", b =>
+            modelBuilder.Entity("AdditionalIssue", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -33,12 +33,20 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<decimal>("EstimatedCost")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("EstimatedDurationMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsApproved")
                         .ValueGeneratedOnAdd()
@@ -235,6 +243,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ActionUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -251,6 +263,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -361,6 +377,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("ExperienceYears")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<bool>("IsAvailable")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -403,6 +424,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar");
+
+                    b.Property<DateTime?>("LastMaintenanceDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -474,7 +498,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     b.ToTable("UserRoles", (string)null);
                 });
 
-            modelBuilder.Entity("CarMaintenance.Core.Domain.Models.Data.AdditionalIssue", b =>
+            modelBuilder.Entity("AdditionalIssue", b =>
                 {
                     b.HasOne("CarMaintenance.Core.Domain.Models.Data.Booking", "Booking")
                         .WithMany("AdditionalIssues")

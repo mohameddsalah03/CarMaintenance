@@ -69,7 +69,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
             // for ReviewSummaryDto
             AddThenInclude($"{nameof(Booking.Review)}.{nameof(Review.User)}");
             AddThenInclude($"{nameof(Booking.Review)}.{nameof(Review.Technician)}.{nameof(Technician.User)}");
-        }
+            }
 
     }
 }

@@ -7,6 +7,7 @@
         public string Brand { get; set; } = null!;
         public int Year { get; set; }
         public string PlateNumber { get; set; } = null!;
+        public DateTime? LastMaintenanceDate { get; set; }
 
         // Foreign Key
         public string UserId { get; set; } = null!;

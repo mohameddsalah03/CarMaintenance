@@ -6,6 +6,7 @@ using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.Invoice;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails;
+using CarMaintenance.Shared.DTOs.Notifications;
 using CarMaintenance.Shared.DTOs.Reviews;
 using CarMaintenance.Shared.DTOs.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
@@ -62,12 +63,10 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Vehicle.Brand))
                 .ForMember(dest => dest.Model, opt => opt.MapFrom(src => src.Vehicle.Model))
                 .ForMember(dest => dest.PlateNumber, opt => opt.MapFrom(src => src.Vehicle.PlateNumber))
-                .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src =>
-                    src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
-                .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src =>
-                    src.AssignedTechnician != null ? src.AssignedTechnician.Id : null)) 
-                .ForMember(dest => dest.TechnicianSpecialization, opt => opt.MapFrom(src =>
-                    src.AssignedTechnician != null ? src.AssignedTechnician.Specialization : null)) 
+                .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
+                .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.Id : null)) 
+                .ForMember(dest => dest.TechnicianSpecialization, opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.Specialization : null))
+                .ForMember(dest => dest.TechnicianRate,opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.Rating : (decimal?)null))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
@@ -83,6 +82,8 @@ namespace CarMaintenance.Core.Service.Mapping
             CreateMap<BookingService, BookingServiceDetailsDto>()
                 .ForMember(dest => dest.ServiceName, opt => opt.MapFrom(src => src.Service.Name))
                 .ForMember(dest => dest.ServicePrice, opt => opt.MapFrom(src => src.Service.BasePrice))
+                .ForMember(dest => dest.ServiceDescription,opt => opt.MapFrom(src => src.Service.Description))    
+                .ForMember(dest => dest.ServiceCategory,opt => opt.MapFrom(src => src.Service.Category))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
             CreateMap<AdditionalIssue, AdditionalIssueDto>();
@@ -104,6 +105,7 @@ namespace CarMaintenance.Core.Service.Mapping
 
             CreateMap<AddAdditionalIssueDto, AdditionalIssue>()
                 .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(_ => false))
+                    .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.BookingId, opt => opt.Ignore());
 
             // Invoice
@@ -122,6 +124,11 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.BookingNumber, opt => opt.MapFrom(src => src.Booking.BookingNumber))
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.DisplayName))
                 .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.Technician.User.DisplayName));
+
+
+            // Notification 
+            CreateMap<Notification, NotificationDto>()
+                .ForMember(dest => dest.Type,opt => opt.MapFrom(src => src.Type.ToString()));
 
         }
 
