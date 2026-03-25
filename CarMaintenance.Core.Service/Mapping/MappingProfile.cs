@@ -6,6 +6,7 @@ using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.Invoice;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails;
+using CarMaintenance.Shared.DTOs.Notifications;
 using CarMaintenance.Shared.DTOs.Reviews;
 using CarMaintenance.Shared.DTOs.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
@@ -123,6 +124,11 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.BookingNumber, opt => opt.MapFrom(src => src.Booking.BookingNumber))
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.DisplayName))
                 .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.Technician.User.DisplayName));
+
+
+            // Notification 
+            CreateMap<Notification, NotificationDto>()
+                .ForMember(dest => dest.Type,opt => opt.MapFrom(src => src.Type.ToString()));
 
         }
 

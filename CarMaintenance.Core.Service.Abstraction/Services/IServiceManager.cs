@@ -1,6 +1,8 @@
 ﻿using CarMaintenance.Core.Service.Abstraction.Common.Infrastructure;
+using CarMaintenance.Core.Service.Abstraction.Services.Admin;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
+using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
@@ -9,14 +11,16 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
 {
     public interface IServiceManager
     {
-        public IServiceService ServiceService { get; }
-        public IAuthService  AuthService { get; }
-        public IVehicleService  VehicleService { get; }
+        IServiceService ServiceService { get; }
+        IAuthService AuthService { get; }
+        IVehicleService VehicleService { get; }
+        ITechniciansService TechniciansService { get; }
+        IBookingService BookingService { get; }
+        IAiTechnicianService AiTechnicianService { get; }
+        IReviewService ReviewService { get; }
 
-        public ITechniciansService TechniciansService { get; }
-        public IBookingService BookingService { get; }
-        public IAiTechnicianService AiTechnicianService { get; }
-        public IReviewService ReviewService { get; }
+        INotificationService NotificationService { get; }
+        IAdminService AdminService { get; }
 
     }
 }

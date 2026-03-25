@@ -1,5 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
-
+using CarMaintenance.Core.Domain.Models.Data.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,13 +27,25 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasMaxLength(1000)
                 .HasColumnType("nvarchar")
                 .IsRequired(false);
-
+            
             builder.Property(n => n.IsRead)
                 .HasDefaultValue(false)
                 .IsRequired();
 
             builder.Property(n => n.CreatedAt)
                 .IsRequired();
+
+            builder.Property(n => n.Type)
+                .HasColumnType("nvarchar(50)")
+                .HasConversion(
+                    type => type.ToString(),
+                    type => Enum.Parse<NotificationType>(type, true))
+                .IsRequired();
+
+            builder.Property(n => n.ActionUrl)
+                .HasMaxLength(500)
+                .HasColumnType("nvarchar(500)")
+                .IsRequired(false);
 
             builder.Property(n => n.UserId)
                 .HasMaxLength(450)

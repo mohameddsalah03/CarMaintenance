@@ -6,6 +6,7 @@ using CarMaintenance.Core.Domain.Specifications.Bookings;
 using CarMaintenance.Core.Domain.Specifications.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Common.Infrastructure;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
+using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Shared.DTOs.AI.Request;
 using CarMaintenance.Shared.DTOs.Bookings;
 using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
@@ -21,7 +22,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
     internal class BookingService(
         IUnitOfWork _unitOfWork,
         IMapper _mapper,
-        IAiTechnicianService _aiTechnicianService
+        IAiTechnicianService _aiTechnicianService,
+         INotificationService _notificationService
     ) : IBookingService
     {
         #region Customer
@@ -63,8 +65,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return result;
         }
 
-        public async Task<BookingDto> CreateBookingAsync(
-            CreateBookingDto createBookingDto, string userId)
+        public async Task<BookingDto> CreateBookingAsync( CreateBookingDto createBookingDto, string userId)
         {
             // 1. Validate vehicle ownership
             var vehicle = await _unitOfWork.GetRepo<Vehicle, int>()
@@ -163,6 +164,15 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var spec = new BookingSpecification(booking.Id);
             var createdBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
 
+            // Notify the customer that booking was confirmed
+            await _notificationService.SendAsync(
+                userId: userId,
+                title: "تم تأكيد حجزك",
+                message: $"تم إنشاء الحجز رقم {booking.BookingNumber} بنجاح. سيتم تعيين فني قريباً.",
+                type: NotificationType.BookingCreated,
+                actionUrl: $"/bookings/{booking.Id}"
+                );
+
             return _mapper.Map<BookingDto>(createdBooking!);
         }
 
@@ -186,6 +196,19 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             booking.Status = BookingStatus.Cancelled;
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
+
+            //  Notify technician if one was assigned
+            if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.AssignedTechnician.UserId,
+                    title: "تم إلغاء الحجز",
+                    message: $"قام العميل {booking.User.DisplayName} بإلغاء الحجز رقم {booking.BookingNumber}.",
+                    type: NotificationType.BookingCancelled,
+                    actionUrl: $"/technician/bookings/{booking.Id}"
+                    );
+            }
+
         }
 
         public async Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto approveAdditionalIssue, string userId)
@@ -222,8 +245,21 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             // Return to InProgress regardless of approve or reject
             booking.Status = BookingStatus.InProgress;
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
-
             await _unitOfWork.SaveChangesAsync();
+
+            //  Notify technician of customer's decision
+            if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
+            {
+                var approved = approveAdditionalIssue.IsApproved;
+                await _notificationService.SendAsync(
+                    userId: booking.AssignedTechnician.UserId,
+                    title: approved ? "وافق العميل على التكلفة الإضافية" : "رفض العميل التكلفة الإضافية",
+                    message: $"العميل {booking.User.DisplayName} {(approved ? "وافق على" : "رفض")} " +$"التكلفة الإضافية للحجز رقم {booking.BookingNumber}.",
+                    type: approved? NotificationType.AdditionalIssueApproved: NotificationType.AdditionalIssueRejected,
+                    actionUrl: $"/technician/bookings/{booking.Id}"
+                    );
+            }
+
         }
 
         public async Task<InvoiceDto> GetBookingInvoiceAsync(int bookingId, string userId)
@@ -369,6 +405,16 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             await _unitOfWork.SaveChangesAsync();
 
+            //  Notify customer that technician found an additional issue
+            await _notificationService.SendAsync(
+                userId: booking.UserId,
+                title: "تكلفة إضافية مطلوبة",
+                message: $"الفني اكتشف مشكلة إضافية في حجزك رقم {booking.BookingNumber}: " +
+                         $"{issueDto.Title}. التكلفة المتوقعة: {issueDto.EstimatedCost} جنيه.",
+                type: NotificationType.AdditionalIssueAdded,
+                actionUrl: $"/bookings/{bookingId}")
+                ;
+
             return _mapper.Map<AdditionalIssueDto>(additionalIssue);
         }
 
@@ -435,6 +481,28 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
 
+            //  Notify customer when booking is completed
+            if (newStatus == BookingStatus.Completed)
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.UserId,
+                    title: "تم إكمال الحجز بنجاح",
+                    message: $"تم الانتهاء من صيانة سيارتك في الحجز رقم {booking.BookingNumber}. " +"يمكنك الآن استلام سيارتك.",
+                    type: NotificationType.BookingCompleted,
+                    actionUrl: $"/bookings/{booking.Id}");
+            }
+
+            //  Notify customer when technician starts working
+            if (newStatus == BookingStatus.InProgress)
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.UserId,
+                    title: "بدأ الفني العمل على سيارتك",
+                    message: $"بدأ الفني {booking.AssignedTechnician?.User?.DisplayName} " + $"العمل على حجزك رقم {booking.BookingNumber}.",
+                    type: NotificationType.TechnicianAssigned,
+                    actionUrl: $"/bookings/{booking.Id}");
+            }
+
             var updatedSpec = new BookingSpecification(id);
             var updatedBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(updatedSpec);
 
@@ -445,8 +513,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         #region Admin
 
-        public async Task<Pagination<BookingDto>> GetAllBookingsAsync(
-            BookingSpecParams specParams)
+        public async Task<Pagination<BookingDto>> GetAllBookingsAsync( BookingSpecParams specParams)
         {
             var spec = new BookingSpecification(specParams);
             var bookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec);
@@ -521,8 +588,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         #region Private Helpers
 
-        private async Task TryAutoAssignTechnicianAsync(
-            Booking booking, List<Domain.Models.Data.Service> services)
+        private async Task TryAutoAssignTechnicianAsync(Booking booking, List<Domain.Models.Data.Service> services)
         {
             try
             {
@@ -564,6 +630,22 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     booking.TechnicianId = technicianId;
                     _unitOfWork.GetRepo<Booking, int>().Update(booking);
                     await _unitOfWork.SaveChangesAsync();
+
+                    // Notify customer that a technician was assigned
+                    var techSpec = new TechnicianSpecification(technicianId);
+                    var assignedTechnician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
+
+                    if (assignedTechnician != null)
+                    {
+                        await _notificationService.SendAsync(
+                            userId: booking.UserId,
+                            title: "تم تعيين فني لحجزك",
+                            message: $"تم تعيين الفني {assignedTechnician.User.DisplayName} " + $"({assignedTechnician.Specialization}) للحجز رقم {booking.BookingNumber}.",
+                            type: NotificationType.TechnicianAssigned,
+                            actionUrl: $"/bookings/{booking.Id}");
+                    }
+                
+
                 }
             }
             catch (Exception ex)
