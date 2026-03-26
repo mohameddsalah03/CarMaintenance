@@ -180,11 +180,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 {
                     PropertyNameCaseInsensitive = true,
                     Converters =
-                    {
-                        new BookingStatusJsonConverter(),
-                        new PaymentMethodJsonConverter(),
-                        new PaymentStatusJsonConverter()
-                    }
+            {
+                new BookingStatusJsonConverter(),
+                new PaymentMethodJsonConverter(),
+                new PaymentStatusJsonConverter()
+            }
                 };
 
                 var bookings = await JsonSerializer.DeserializeAsync<List<Booking>>(bookingsData, options);
@@ -204,8 +204,16 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
                     if (validBookings.Any())
                     {
-                        await _context.Bookings.AddRangeAsync(validBookings);
-                        await _context.SaveChangesAsync();
+                        await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT Bookings ON");
+                        try
+                        {
+                            await _context.Bookings.AddRangeAsync(validBookings);
+                            await _context.SaveChangesAsync();
+                        }
+                        finally
+                        {
+                            await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT Bookings OFF");
+                        }
                     }
                 }
             }
@@ -230,8 +238,16 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
                 if (bookingServices != null && bookingServices.Any())
                 {
-                    await _context.BookingServices.AddRangeAsync(bookingServices);
-                    await _context.SaveChangesAsync();
+                    await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT BookingServices ON");
+                    try
+                    {
+                        await _context.BookingServices.AddRangeAsync(bookingServices);
+                        await _context.SaveChangesAsync();
+                    }
+                    finally
+                    {
+                        await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT BookingServices OFF");
+                    }
                 }
             }
         }
