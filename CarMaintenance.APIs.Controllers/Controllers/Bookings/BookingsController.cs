@@ -13,19 +13,14 @@ using System.Security.Claims;
 
 namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
 {
-    public class BookingsController : BaseApiController
+    public class BookingsController(IServiceManager _serviceManager) : BaseApiController
     {
-        private readonly IServiceManager _serviceManager;
-
-        public BookingsController(IServiceManager serviceManager)
-        {
-            _serviceManager = serviceManager;
-        }
+       
 
         #region Customer Endpoints
 
         [Authorize(Roles = "Customer")]
-        [HttpPost] // POST: /api/Bookings
+        [HttpPost]
         public async Task<ActionResult<BookingDto>> CreateBooking([FromBody] CreateBookingDto createDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -34,8 +29,9 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpGet("my-bookings")] // GET: /api/Bookings/my-bookings
-        public async Task<ActionResult<Pagination<BookingDto>>> GetMyBookings([FromQuery] BookingSpecParams specParams)
+        [HttpGet("my-bookings")]
+        public async Task<ActionResult<Pagination<BookingDto>>> GetMyBookings(
+            [FromQuery] BookingSpecParams specParams)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var bookings = await _serviceManager.BookingService.GetMyBookingsAsync(specParams, userId!);
@@ -43,7 +39,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpGet("{id:int}")] // GET: /api/Bookings/{id}
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<BookingDetailsDto>> GetBookingDetails(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -52,23 +48,27 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         }
 
         [Authorize(Roles = "Customer")]
-        [HttpPatch("{id:int}/cancel")] // PATCH: /api/Bookings/{id}/cancel
+        [HttpPatch("{id:int}/cancel")]
         public async Task<ActionResult> CancelBooking(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             await _serviceManager.BookingService.CancelBookingAsync(id, userId!);
-            return Ok();
+            return Ok(new { message = "تم إلغاء الحجز بنجاح" });
         }
 
         [Authorize(Roles = "Customer")]
         [HttpPatch("additional-issues/{issueId:int}/approve")]
-        public async Task<ActionResult> ApproveAdditionalIssue(int issueId,[FromBody] ApproveAdditionalIssueDto approveDto)
+        public async Task<ActionResult> ApproveAdditionalIssue(
+            int issueId, [FromBody] ApproveAdditionalIssueDto approveDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             approveDto.IssueId = issueId;
             await _serviceManager.BookingService.ApproveAdditionalIssueAsync(approveDto, userId);
 
-            var message = approveDto.IsApproved? "تمت الموافقة على المشكلة الإضافية بنجاح": "تم رفض المشكلة الإضافية";
+            var message = approveDto.IsApproved
+                ? "تمت الموافقة على المشكلة الإضافية بنجاح"
+                : "تم رفض المشكلة الإضافية";
+
             return Ok(new { message });
         }
 
@@ -86,46 +86,63 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         #region Admin Endpoints
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("all")] // GET: /api/Bookings/all
+        [HttpGet("all")]
         public async Task<ActionResult<Pagination<BookingDto>>> GetAllBookings([FromQuery] BookingSpecParams specParams)
-            =>  Ok(await _serviceManager.BookingService.GetAllBookingsAsync(specParams));
-        
+            => Ok(await _serviceManager.BookingService.GetAllBookingsAsync(specParams));
 
         [Authorize(Roles = "Admin")]
         [HttpPost("{id:int}/assign-technician")]
         public async Task<ActionResult<BookingDto>> AssignTechnician(int id)
             => Ok(await _serviceManager.BookingService.AssignTechnicianAsync(id));
-        
+
+        // FIX #14: Admin cancel endpoint
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("{id:int}/admin-cancel")]
+        public async Task<ActionResult> AdminCancelBooking(int id)
+        {
+            await _serviceManager.BookingService.CancelBookingByAdminAsync(id);
+            return Ok(new { message = "تم إلغاء الحجز بواسطة الإدارة" });
+        }
 
         #endregion
 
         #region Technician Endpoints
 
         [Authorize(Roles = "Technician")]
-        [HttpGet("my-assignments")] // GET: /api/Bookings/my-assignments
+        [HttpGet("my-assignments")]
         public async Task<ActionResult<Pagination<BookingDto>>> GetMyAssignedBookings([FromQuery] BookingSpecParams specParams)
         {
-            var technicianId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var bookings = await _serviceManager.BookingService.GetMyAssignedBookingsAsync(specParams, technicianId!);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var bookings = await _serviceManager.BookingService.GetMyAssignedBookingsAsync(specParams, userId!);
             return Ok(bookings);
+        }
+
+        //  Missing endpoint now added
+        [Authorize(Roles = "Technician")]
+        [HttpGet("{id:int}/details")]
+        public async Task<ActionResult<BookingDetailsDto>> GetBookingDetailsForTechnician(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var booking = await _serviceManager.BookingService.GetBookingDetailsForTechnicianAsync(id, userId!);
+            return Ok(booking);
         }
 
         [Authorize(Roles = "Technician")]
         [HttpPatch("{id:int}/update-status")]
-        public async Task<ActionResult<BookingDto>> UpdateBookingStatus(int id,[FromBody] UpdateBookingStatusDto statusDto)
+        public async Task<ActionResult<BookingDto>> UpdateBookingStatus(int id, [FromBody] UpdateBookingStatusDto statusDto)
         {
-            var technicianId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var booking = await _serviceManager.BookingService.UpdateBookingStatusAsync(id, statusDto, technicianId!);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var booking = await _serviceManager.BookingService.UpdateBookingStatusAsync(id, statusDto, userId!);
             return Ok(booking);
         }
 
         [Authorize(Roles = "Technician")]
         [HttpPost("{id:int}/additional-issues")]
-        public async Task<ActionResult<AdditionalIssueDto>> AddAdditionalIssue(int id,[FromBody] AddAdditionalIssueDto issueDto)
+        public async Task<ActionResult<AdditionalIssueDto>> AddAdditionalIssue(int id, [FromBody] AddAdditionalIssueDto issueDto)
         {
-            var technicianId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             issueDto.BookingId = id;
-            var issue = await _serviceManager.BookingService.AddAdditionalIssueAsync(id, issueDto, technicianId!);
+            var issue = await _serviceManager.BookingService.AddAdditionalIssueAsync(id, issueDto, userId!);
             return Ok(issue);
         }
 

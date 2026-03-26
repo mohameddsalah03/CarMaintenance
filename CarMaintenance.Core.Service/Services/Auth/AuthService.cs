@@ -114,11 +114,16 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
                 if (user is null)
                 {
+                    //  Use same GenerateUserName strategy as RegisterAsync
+                    // to avoid username = email (which breaks uniqueness if email has special chars
+                    // or conflicts with manually registered users)
+                    var userName = GenerateUserName(payload.Email);
+
                     user = new ApplicationUser
                     {
                         DisplayName = payload.Name,
                         Email = payload.Email,
-                        UserName = payload.Email,
+                        UserName = userName,      // ← was: payload.Email (bug)
                         EmailConfirmed = true
                     };
 
@@ -127,19 +132,16 @@ namespace CarMaintenance.Core.Service.Services.Auth
                     {
                         throw new ValidationException(
                             "Failed to create user account",
-                            createResult.Errors.Select(e => e.Description)
-                        );
+                            createResult.Errors.Select(e => e.Description));
                     }
 
-                    // Adding role for customer after register 
                     await _userManager.AddToRoleAsync(user, "Customer");
                 }
 
                 var (accessToken, refreshToken) = await GenerateTokensAsync(user);
-
                 var roles = await _userManager.GetRolesAsync(user);
 
-                return new UserDto()
+                return new UserDto
                 {
                     Id = user.Id,
                     DisplayName = user.DisplayName,
@@ -147,7 +149,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
                     Token = accessToken,
                     RefreshToken = refreshToken,
                     TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
-                    Roles = roles 
+                    Roles = roles
                 };
             }
             catch (InvalidJwtException)

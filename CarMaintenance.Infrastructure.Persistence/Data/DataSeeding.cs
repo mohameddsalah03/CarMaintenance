@@ -136,103 +136,38 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
         private async Task SeedServicesAsync()
         {
-            try
+            if (_context.Services.Any()) return;  // Already seeded — skip
+
+            // Use _seedsPath — same as all other seed methods
+            var servicesPath = Path.Combine(_seedsPath, "services.json");
+
+            if (!File.Exists(servicesPath))
             {
-                var servicesPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "..",
-                    "CarMaintenance.Infrastructure.Persistence",
-                    "Data",
-                    "Seeds",
-                    "services.json"
-                );
-
-                servicesPath = Path.GetFullPath(servicesPath);
-                Console.WriteLine($"🔍 Looking for: {servicesPath}");
-
-                if (!File.Exists(servicesPath))
-                {
-                    Console.WriteLine($"❌ services.json not found at: {servicesPath}");
-                    return;
-                }
-
-                Console.WriteLine("📂 Reading services.json...");
-
-                using var servicesData = File.OpenRead(servicesPath);
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-
-                var servicesFromFile = await JsonSerializer.DeserializeAsync<List<Service>>(servicesData, options);
-
-                if (servicesFromFile == null || !servicesFromFile.Any())
-                {
-                    Console.WriteLine("⚠️ No services found in JSON file");
-                    return;
-                }
-
-                Console.WriteLine($"📋 Found {servicesFromFile.Count} services in file");
-
-                int addedCount = 0, updatedCount = 0, skippedCount = 0;
-
-                foreach (var serviceFromFile in servicesFromFile)
-                {
-                    if (serviceFromFile.Id <= 0)
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(serviceFromFile.Name))
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    try
-                    {
-                        var existingService = await _context.Services
-                            .FirstOrDefaultAsync(s => s.Id == serviceFromFile.Id);
-
-                        if (existingService != null)
-                        {
-                            Console.WriteLine($"🔄 Updating service: {serviceFromFile.Name}");
-                            existingService.Name = serviceFromFile.Name;
-                            existingService.Category = serviceFromFile.Category;
-                            existingService.Description = serviceFromFile.Description;
-                            existingService.BasePrice = serviceFromFile.BasePrice;
-                            existingService.EstimatedDurationMinutes = serviceFromFile.EstimatedDurationMinutes;
-                            existingService.IncludedItems = serviceFromFile.IncludedItems;
-                            existingService.ExcludedItems = serviceFromFile.ExcludedItems;
-                            existingService.Requirements = serviceFromFile.Requirements;
-                            _context.Services.Update(existingService);
-                            updatedCount++;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"➕ Adding new service: {serviceFromFile.Name}");
-                            await _context.Services.AddAsync(serviceFromFile);
-                            addedCount++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"❌ Error processing service '{serviceFromFile.Name}': {ex.Message}");
-                        skippedCount++;
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-                Console.WriteLine($"✅ Services seeding completed! Added: {addedCount}, Updated: {updatedCount}, Skipped: {skippedCount}");
+                Console.WriteLine($"❌ services.json not found at: {servicesPath}");
+                return;
             }
-            catch (Exception ex)
+
+            using var stream = File.OpenRead(servicesPath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var servicesFromFile = await JsonSerializer.DeserializeAsync<List<Service>>(stream, options);
+
+            if (servicesFromFile == null || !servicesFromFile.Any())
             {
-                Console.WriteLine($"❌ Error in SeedServicesAsync: {ex.Message}");
-                throw;
+                Console.WriteLine("⚠️ No services found in JSON file");
+                return;
+            }
+
+            var validServices = servicesFromFile
+                .Where(s => s.Id > 0 && !string.IsNullOrWhiteSpace(s.Name))
+                .ToList();
+
+            if (validServices.Any())
+            {
+                await _context.Services.AddRangeAsync(validServices);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"✅ Seeded {validServices.Count} services.");
             }
         }
-
         private async Task SeedBookingsAsync()
         {
             if (!_context.Bookings.Any())

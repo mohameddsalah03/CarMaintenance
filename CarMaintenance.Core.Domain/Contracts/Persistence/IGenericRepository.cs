@@ -1,4 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Base;
+using System.Linq.Expressions;
 
 namespace CarMaintenance.Core.Domain.Contracts.Persistence
 {
@@ -16,5 +17,9 @@ namespace CarMaintenance.Core.Domain.Contracts.Persistence
         Task<TEntity?> GetWithSpecAsync(ISpecifications<TEntity, TKey> spec);
         Task<int> GetCountAsync(ISpecifications<TEntity, TKey> spec);
 
+
+        // For Sum in Admin Service
+        // SQL-level aggregation — avoids loading all rows to memory for Sum
+        Task<decimal> GetSumAsync(ISpecifications<TEntity, TKey> spec,Expression<Func<TEntity, decimal>> selector);
     }
 }

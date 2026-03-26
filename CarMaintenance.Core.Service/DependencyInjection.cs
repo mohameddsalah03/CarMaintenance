@@ -4,6 +4,7 @@ using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth.Email;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
 using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
+using CarMaintenance.Core.Service.Abstraction.Services.Payments;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Core.Service.Mapping;
 using CarMaintenance.Core.Service.Services;
@@ -12,6 +13,7 @@ using CarMaintenance.Core.Service.Services.Auth;
 using CarMaintenance.Core.Service.Services.Auth.Email;
 using CarMaintenance.Core.Service.Services.Bookings;
 using CarMaintenance.Core.Service.Services.Notifications;
+using CarMaintenance.Core.Service.Services.Payments;
 using CarMaintenance.Core.Service.Services.Technicians;
 using CarMaintenance.Shared.Settings;
 using Microsoft.Extensions.Configuration;
@@ -35,14 +37,10 @@ namespace CarMaintenance.Core.Service
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<ITechniciansService, TechniciansService>();
-
-
             services.AddScoped<IBookingService, BookingService>();
-
             services.AddScoped<INotificationService, NotificationService>();
-
             services.AddScoped<IAdminService, AdminService>();
-
+            services.AddScoped<IPaymentService, PaymentService>();
 
             return services;
         }

@@ -22,8 +22,8 @@ namespace CarMaintenance.Infrastructure.Persistence
 
             #region IdentityContext And IdentityInitializer
 
-           
 
+            // u regietr it in APIs Project [IdentityExtensions]
             services.AddDbContext<CarDbContext>(options =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("MainContext"));

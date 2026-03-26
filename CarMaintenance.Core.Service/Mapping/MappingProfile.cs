@@ -103,9 +103,10 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => BookingStatus.Pending))
                 .ForMember(dest => dest.BookingId, opt => opt.Ignore());
 
+           
             CreateMap<AddAdditionalIssueDto, AdditionalIssue>()
-                .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(_ => false))
-                    .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => AdditionalIssueStatus.Pending)) 
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.BookingId, opt => opt.Ignore());
 
             // Invoice

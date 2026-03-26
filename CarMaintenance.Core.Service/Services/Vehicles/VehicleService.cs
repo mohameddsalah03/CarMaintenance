@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Domain.Models.Data;
+using CarMaintenance.Core.Domain.Specifications.Bookings;
 using CarMaintenance.Core.Domain.Specifications.Vehicles;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
 using CarMaintenance.Shared.DTOs.Vehicles;
@@ -84,6 +85,7 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             return mapper.Map<VehicleDto>(updatedVehicle!);
         }
 
+        // Check for active bookings before deleting
         public async Task DeleteVehicleAsync(int id, string userId)
         {
             var spec = new VehicleSpecification(id, userId);
@@ -91,6 +93,15 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
 
             if (vehicle is null)
                 throw new NotFoundException(nameof(Vehicle), id);
+
+            // Block deletion if vehicle has active bookings
+            var activeBookingSpec = new BookingByVehicleActiveSpecification(id);
+            var activeCount = await unitOfWork.GetRepo<Booking, int>().GetCountAsync(activeBookingSpec);
+
+            if (activeCount > 0)
+                throw new BadRequestException(
+                    $"لا يمكن حذف السيارة — لديها {activeCount} حجز نشط حالياً. " +
+                    "يرجى إلغاء أو انتظار اكتمال جميع الحجوزات قبل الحذف.");
 
             unitOfWork.GetRepo<Vehicle, int>().Delete(vehicle);
             await unitOfWork.SaveChangesAsync();

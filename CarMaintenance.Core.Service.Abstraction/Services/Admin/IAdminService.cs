@@ -10,5 +10,6 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Admin
 
         // Full booking details - admin can see any booking
         Task<BookingDetailsDto> GetBookingDetailsAsync(int bookingId);
+        Task<IEnumerable<CustomerDto>> GetAllCustomersAsync();
     }
 }

@@ -23,47 +23,44 @@ namespace CarMaintenance.Core.Service.Services.Admin
         {
             var today = DateTime.UtcNow.Date;
 
-
-            // All bookings (lightweight - no includes needed for counting)
-            var allBookingsSpec = new BookingStatsSpecification();
-            var allBookings = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(allBookingsSpec)).ToList();
-
-            // Today's bookings
-            var todaySpec = new BookingStatsSpecification(today);
-            var todayCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(todaySpec);
-
-            // Count by each status using spec
-            var pendingCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(new BookingStatsSpecification(BookingStatus.Pending));
-
-            var inProgressCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(new BookingStatsSpecification(BookingStatus.InProgress));
-
-            var waitingCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(new BookingStatsSpecification(BookingStatus.WaitingClientApproval));
-
-            var completedCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(new BookingStatsSpecification(BookingStatus.Completed));
-
-            var cancelledCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(new BookingStatsSpecification(BookingStatus.Cancelled));
+            //  Use GetCountAsync — SQL COUNT(*) — no memory loading
+            var totalBookings = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification());
+            var todayCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification(today));
+            var pendingCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification(BookingStatus.Pending));
+            var inProgressCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification(BookingStatus.InProgress));
+            var waitingCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification(BookingStatus.WaitingClientApproval));
+            var completedCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification(BookingStatus.Completed));
+            var cancelledCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(new BookingStatsSpecification(BookingStatus.Cancelled));
 
             // Technicians
-            var allTechsSpec = new TechnicianSpecification();
-            var totalTechs = await _unitOfWork.GetRepo<Technician, string>().GetCountAsync(allTechsSpec);
-
-            var availableTechsSpec = new TechnicianSpecification(isAvailable: true);
-            var availableTechs = await _unitOfWork.GetRepo<Technician, string>().GetCountAsync(availableTechsSpec);
+            var totalTechs = await _unitOfWork.GetRepo<Technician, string>()
+                .GetCountAsync(new TechnicianSpecification());
+            var availableTechs = await _unitOfWork.GetRepo<Technician, string>()
+                .GetCountAsync(new TechnicianSpecification(isAvailable: true));
 
             // Customers
             var customers = await _userManager.GetUsersInRoleAsync("Customer");
 
-            // Reviews for average rating
+            //  SQL-level SUM via GetSumAsync — no loading completed bookings to memory
+            var totalRevenue = await _unitOfWork.GetRepo<Booking, int>()
+                .GetSumAsync(BookingStatsSpecification.ForRevenue(), b => b.TotalCost);
+
+            var todayRevenue = await _unitOfWork.GetRepo<Booking, int>()
+                .GetSumAsync(BookingStatsSpecification.ForTodayRevenue(today), b => b.TotalCost);
+
+            // Reviews — still need to load for average (no generic AverageAsync in spec yet)
             var allReviews = (await _unitOfWork.GetRepo<Review, int>().GetAllAsync()).ToList();
-
-            // Revenue using specs
-            var completedBookings = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(BookingStatsSpecification.ForRevenue())).ToList();
-
-            var todayRevenue = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(BookingStatsSpecification.ForTodayRevenue(today))).Sum(b => b.TotalCost);
 
             return new DashboardStatsDto
             {
-                TotalBookings = allBookings.Count,
+                TotalBookings = totalBookings,
                 PendingBookings = pendingCount,
                 InProgressBookings = inProgressCount,
                 WaitingApprovalBookings = waitingCount,
@@ -77,11 +74,10 @@ namespace CarMaintenance.Core.Service.Services.Admin
                     ? Math.Round((decimal)allReviews.Average(r => r.TechnicianRating), 2)
                     : 0,
                 TotalReviews = allReviews.Count,
-                TotalRevenue = completedBookings.Sum(b => b.TotalCost),
+                TotalRevenue = totalRevenue,
                 TodayRevenue = todayRevenue
             };
         }
-
         public async Task<BookingDetailsDto> GetBookingDetailsAsync(int bookingId)
         {
             var spec = new BookingSpecification(bookingId);
@@ -91,6 +87,21 @@ namespace CarMaintenance.Core.Service.Services.Admin
                 throw new NotFoundException(nameof(Booking), bookingId);
 
             return _mapper.Map<BookingDetailsDto>(booking);
+        }
+
+        // List All Customers 
+        public async Task<IEnumerable<CustomerDto>> GetAllCustomersAsync()
+        {
+            var customers = await _userManager.GetUsersInRoleAsync("Customer");
+
+            return customers.Select(u => new CustomerDto
+            {
+                Id = u.Id,
+                DisplayName = u.DisplayName,
+                Email = u.Email ?? "",
+                PhoneNumber = u.PhoneNumber ?? "",
+                UserName = u.UserName ?? ""
+            }).OrderBy(c => c.DisplayName);
         }
     }
 }

@@ -3,6 +3,7 @@ using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.DTOs.Notifications;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -11,7 +12,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Notifications
     [Authorize]
     public class NotificationsController(INotificationService _notificationService) : BaseApiController
     {
-        // GET: /api/notifications?pageIndex=1&pageSize=10
         [HttpGet]
         public async Task<ActionResult<Pagination<NotificationDto>>> GetMyNotifications(
             [FromQuery] NotificationSpecParams specParams)
@@ -21,18 +21,19 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Notifications
             return Ok(result);
         }
 
-        // GET: /api/notifications/unread-count
-        // Used for the bell badge number
+        //  X-Unread-Count header added for frontend polling support
         [HttpGet("unread-count")]
         public async Task<ActionResult<object>> GetUnreadCount()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var count = await _notificationService.GetUnreadCountAsync(userId);
+
+            // Header allows frontend to read count without parsing JSON body
+            Response.Headers.Append("X-Unread-Count", count.ToString());
+
             return Ok(new { unreadCount = count });
         }
 
-        // PATCH: /api/notifications/{id}/mark-read
-        // Called when user clicks a notification
         [HttpPatch("{id:int}/mark-read")]
         public async Task<ActionResult> MarkAsRead(int id)
         {
@@ -41,8 +42,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Notifications
             return Ok(new { message = "تم تحديد الإشعار كمقروء" });
         }
 
-        // PATCH: /api/notifications/mark-all-read
-        // Called when user clicks "Mark all as read"
         [HttpPatch("mark-all-read")]
         public async Task<ActionResult> MarkAllAsRead()
         {

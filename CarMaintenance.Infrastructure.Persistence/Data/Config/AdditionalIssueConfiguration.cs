@@ -1,54 +1,53 @@
-﻿using CarMaintenance.Core.Domain.Models.Data;
-
+﻿using CarMaintenance.Core.Domain.Models.Data.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 {
-    
     public class AdditionalIssueConfiguration : IEntityTypeConfiguration<AdditionalIssue>
     {
         public void Configure(EntityTypeBuilder<AdditionalIssue> builder)
         {
-            // Table 
             builder.ToTable("AdditionalIssues");
 
-            // Properties
-            builder.Property(E => E.Id)
-                   .ValueGeneratedOnAdd();
+            builder.Property(e => e.Id).ValueGeneratedOnAdd();
+
             builder.Property(ai => ai.Title)
                 .HasMaxLength(300)
-                .HasColumnType("nvarchar")
+                .HasColumnType("nvarchar(300)")
                 .IsRequired();
+
             builder.Property(ai => ai.Description)
-                    .HasMaxLength(1000)
-                    .HasColumnType("nvarchar(1000)")
-                    .IsRequired(false);
+                .HasMaxLength(1000)
+                .HasColumnType("nvarchar(1000)")
+                .IsRequired(false);
 
             builder.Property(ai => ai.EstimatedCost)
                 .HasColumnType("decimal(18,2)")
                 .IsRequired();
 
-
             builder.Property(ai => ai.EstimatedDurationMinutes)
                 .IsRequired()
                 .HasDefaultValue(0);
 
-            builder.Property(ai => ai.CreatedAt)
+            builder.Property(ai => ai.CreatedAt).IsRequired();
+
+            // Store Status as string, default = Pending
+            builder.Property(ai => ai.Status)
+                .HasColumnType("nvarchar(20)")
+                .HasConversion(
+                    s => s.ToString(),
+                    s => Enum.Parse<AdditionalIssueStatus>(s, true))
+                .HasDefaultValue(AdditionalIssueStatus.Pending)
                 .IsRequired();
 
-            builder.Property(ai => ai.IsApproved)
-                .HasDefaultValue(false)
-                .IsRequired();
+            // Ignore computed property — not mapped to DB column
+            builder.Ignore(ai => ai.IsApproved);
 
-            builder.Property(ai => ai.BookingId)
-                .IsRequired();
+            builder.Property(ai => ai.BookingId).IsRequired();
 
-            // Indexes
             builder.HasIndex(ai => ai.BookingId);
 
-            // Relationships
-            // AdditionalIssue -> Booking (Many-to-One)
             builder.HasOne(ai => ai.Booking)
                 .WithMany(b => b.AdditionalIssues)
                 .HasForeignKey(ai => ai.BookingId)

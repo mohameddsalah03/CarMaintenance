@@ -3,6 +3,7 @@ using CarMaintenance.Core.Service.Abstraction.Services.Admin;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
 using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
+using CarMaintenance.Core.Service.Abstraction.Services.Payments;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
@@ -21,6 +22,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
 
         INotificationService NotificationService { get; }
         IAdminService AdminService { get; }
+        IPaymentService PaymentService { get; }
 
     }
 }
