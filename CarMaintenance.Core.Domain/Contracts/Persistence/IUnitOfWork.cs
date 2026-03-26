@@ -5,7 +5,8 @@ namespace CarMaintenance.Core.Domain.Contracts.Persistence
     public interface IUnitOfWork
     {
 
-        public IGenericRepository<TEntity, Tkey> GetRepo<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>;
+        public IGenericRepository<TEntity, Tkey> GetRepo<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>
+            where Tkey : IEquatable<Tkey>;
 
 
         Task<int> SaveChangesAsync();

@@ -1,0 +1,16 @@
+[
+  {
+    "Model": "كامري",
+    "Brand": "تويوتا",
+    "Year": 2022,
+    "PlateNumber": "س م أ 1234",
+    "UserId": "fd767dae-db14-48d6-8fc9-2d690fb441dc"
+  },
+  {
+    "Model": "أكورد",
+    "Brand": "هوندا",
+    "Year": 2021,
+    "PlateNumber": "ب ن د 5678",
+    "UserId": "fd767dae-db14-48d6-8fc9-2d690fb441dc"
+  }
+]

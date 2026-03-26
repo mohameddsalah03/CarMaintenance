@@ -8,9 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.22" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="8.0.25" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CarMaintenance.Core.Domain\CarMaintenance.Core.Domain.csproj" />
     <ProjectReference Include="..\CarMaintenance.Shared\CarMaintenance.Shared.csproj" />
   </ItemGroup>
 

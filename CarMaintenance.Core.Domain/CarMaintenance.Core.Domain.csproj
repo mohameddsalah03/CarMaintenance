@@ -7,11 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Contracts\Infrastructure\**" />
+    <EmbeddedResource Remove="Contracts\Infrastructure\**" />
+    <None Remove="Contracts\Infrastructure\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.22" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Contracts\Infrastructure\" />
+    <ProjectReference Include="..\CarMaintenance.Shared\CarMaintenance.Shared.csproj" />
   </ItemGroup>
 
 </Project>

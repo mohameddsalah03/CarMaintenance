@@ -1,4 +1,4 @@
-﻿using CarMaintenance.Core.Domain.Models.Identity;
+﻿using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth.Email;
 using CarMaintenance.Shared.DTOs.Auth;
@@ -27,58 +27,22 @@ namespace CarMaintenance.Core.Service.Services.Auth
         private readonly JwtSettings _jwtSettings = _jwtSettings.Value;
         private readonly AppSettings _appSettings = _appSettings.Value;
 
-      
+
         public async Task<UserDto> LoginAsync(LoginDto loginDto)
         {
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user is null) throw new UnauthorizedException("Invalid Login");
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password ,lockoutOnFailure:true);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, lockoutOnFailure: true);
 
             if (result.IsNotAllowed) throw new UnauthorizedException("Account Not Confirmed Yet.");
             if (result.IsLockedOut) throw new UnauthorizedException("Account Is Locked.");
-            if (!result.Succeeded) throw new UnauthorizedException("Invalid Login."); // Must in Last
-            
-            // ✅ Generate both tokens
+            if (!result.Succeeded) throw new UnauthorizedException("Invalid Login.");
+
+            //  Generate both tokens
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);
 
-            var response = new UserDto()
-            {
-                Id = user.Id,
-                DisplayName = user.DisplayName,
-                Email = user.Email!,
-                Token = accessToken, // Access Token
-                RefreshToken = refreshToken, // Refresh Token
-                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
-            };
-
-            return response;
-
-        }
-
-        public async Task<UserDto> RegisterAsync(RegisterDto registerDto)
-        {
-            /// don't need this because called the default in identity extensions [identityOptions.User.RequireUniqueEmail = true;]
-            /// if (EmailExists(registerDto.Email).Result) 
-            ///    throw new BadRequestException("This Email Is Already in user"); 
-
-            var user = new ApplicationUser()
-            {
-                DisplayName = registerDto.DisplayName,
-                Email = registerDto.Email,
-                UserName = registerDto.UserName,  
-                PhoneNumber = registerDto.PhoneNumber,
-            };
-
-            var result = await _userManager.CreateAsync(user , registerDto.Password);
-
-            if(!result.Succeeded) throw new ValidationException() 
-            {
-                Errors = result.Errors.Select(E=>E.Description)
-            };
-
-            // ✅ Generate both tokens
-            var (accessToken, refreshToken) = await GenerateTokensAsync(user);
+            var roles = await _userManager.GetRolesAsync(user);
 
             var response = new UserDto()
             {
@@ -87,12 +51,56 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 Email = user.Email!,
                 Token = accessToken,
                 RefreshToken = refreshToken,
-                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
+                Roles = roles
             };
-            return response;    
+
+            return response;
+        }
+        public async Task<UserDto> RegisterAsync(RegisterDto registerDto)
+        {
+            var userName = GenerateUserName(registerDto.Email);
+
+            var user = new ApplicationUser()
+            {
+                DisplayName = registerDto.DisplayName,
+                Email = registerDto.Email,
+                UserName = userName,
+                PhoneNumber = registerDto.PhoneNumber,
+            };
+
+            var result = await _userManager.CreateAsync(user, registerDto.Password);
+
+            if (!result.Succeeded)
+            {
+                throw new ValidationException(
+                    "Registration failed",
+                    result.Errors.Select(e => e.Description)
+                );
+            }
+
+            //  Adding role for customer after register 
+            await _userManager.AddToRoleAsync(user, "Customer");
+
+            //  Generate both tokens
+            var (accessToken, refreshToken) = await GenerateTokensAsync(user);
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var response = new UserDto()
+            {
+                Id = user.Id,
+                DisplayName = user.DisplayName,
+                Email = user.Email!,
+                Token = accessToken,
+                RefreshToken = refreshToken,
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
+                Roles = roles 
+            };
+
+            return response;
         }
 
-       
         public async Task<bool> EmailExists(string email)
             => await _userManager.FindByEmailAsync(email!) is not null;
 
@@ -106,34 +114,42 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
                 if (user is null)
                 {
-                    
+                    //  Use same GenerateUserName strategy as RegisterAsync
+                    // to avoid username = email (which breaks uniqueness if email has special chars
+                    // or conflicts with manually registered users)
+                    var userName = GenerateUserName(payload.Email);
+
                     user = new ApplicationUser
                     {
                         DisplayName = payload.Name,
                         Email = payload.Email,
-                        UserName = payload.Email,
+                        UserName = userName,      // ← was: payload.Email (bug)
                         EmailConfirmed = true
                     };
 
                     var createResult = await _userManager.CreateAsync(user);
                     if (!createResult.Succeeded)
-                        throw new ValidationException()
-                        {
-                            Errors = createResult.Errors.Select(e => e.Description)
-                        };
+                    {
+                        throw new ValidationException(
+                            "Failed to create user account",
+                            createResult.Errors.Select(e => e.Description));
+                    }
+
+                    await _userManager.AddToRoleAsync(user, "Customer");
                 }
 
-                // ✅ Generate both tokens
                 var (accessToken, refreshToken) = await GenerateTokensAsync(user);
+                var roles = await _userManager.GetRolesAsync(user);
 
-                return new UserDto()
+                return new UserDto
                 {
                     Id = user.Id,
                     DisplayName = user.DisplayName,
                     Email = user.Email!,
                     Token = accessToken,
                     RefreshToken = refreshToken,
-                    TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
+                    TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
+                    Roles = roles
                 };
             }
             catch (InvalidJwtException)
@@ -141,32 +157,30 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 throw new UnauthorizedException("Invalid Google token");
             }
         }
-
         public async Task ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
-
             if (user is null)
-                return;
+                throw  new UnauthorizedException("This User is not Registered");
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            var resetUrl = $"{_appSettings.FrontendUrl}/reset-password?email={user.Email}&token={encodedToken}";
+            var resetUrl = $"{_appSettings.FrontendUrl.TrimEnd('/')}/reset-password?email={user.Email}&token={encodedToken}";
 
+           
             var emailBody = $@"
-                <h2>إعادة تعيين كلمة المرور</h2>
-                <p>مرحباً {user.DisplayName},</p>
-                <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
-                <p>يرجى الضغط على الرابط التالي لإعادة تعيين كلمة المرور:</p>
-                <a href='{resetUrl}'>إعادة تعيين كلمة المرور</a>
-                <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
-                <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد.</p>
-            ";
+                             <h2>إعادة تعيين كلمة المرور</h2>
+                             <p>مرحباً {user.DisplayName},</p>
+                             <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.</p>
+                             <p>يرجى الضغط على الرابط التالي لإعادة تعيين كلمة المرور:</p>
+                             <a href='{resetUrl}'>إعادة تعيين كلمة المرور</a>
+                             <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
+                            <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد.</p>
+                        ";
 
             await _emailService.SendEmailAsync(user.Email!, "إعادة تعيين كلمة المرور", emailBody);
         }
-
         public async Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
@@ -182,10 +196,12 @@ namespace CarMaintenance.Core.Service.Services.Auth
                     user, decodedToken, resetPasswordDto.NewPassword);
 
                 if (!result.Succeeded)
-                    throw new ValidationException()
-                    {
-                        Errors = result.Errors.Select(e => e.Description)
-                    };
+                {
+                    throw new ValidationException(
+                        "Failed to reset password",
+                        result.Errors.Select(e => e.Description)
+                    );
+                }
             }
             catch (FormatException)
             {
@@ -195,7 +211,6 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
         #region Helper Methods 
 
-        //  إضافة Method لتوليد Refresh Token
         private string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
@@ -205,10 +220,8 @@ namespace CarMaintenance.Core.Service.Services.Auth
         }
 
 
-        //  تعديل GenerateTokenAsync عشان ترجع Access Token + Refresh Token
         private async Task<(string accessToken, string refreshToken)> GenerateTokensAsync(ApplicationUser user)
         {
-            // Generate Access Token (نفس الكود القديم)
             List<Claim> ClaimList = new List<Claim>()
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -227,7 +240,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
             var tokenObj = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes), // 15 دقيقة
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes), 
                 claims: ClaimList,
                 signingCredentials: signInCredentials
             );
@@ -251,7 +264,6 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
         public async Task<UserDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
         {
-            // 1. Validate Access Token (بدون التحقق من Expiry)
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(refreshTokenDto.Token, new TokenValidationParameters
             {
@@ -261,7 +273,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 ValidIssuer = _jwtSettings.Issuer,
                 ValidateAudience = true,
                 ValidAudience = _jwtSettings.Audience,
-                ValidateLifetime = false, // ✅ مش مهم لو منتهي
+                ValidateLifetime = false, 
                 ClockSkew = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 
@@ -286,6 +298,8 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
             // 5. Generate new tokens
             var (newAccessToken, newRefreshToken) = await GenerateTokensAsync(user);
+            
+            var roles = await _userManager.GetRolesAsync(user);
 
             return new UserDto()
             {
@@ -294,10 +308,18 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 Email = user.Email!,
                 Token = newAccessToken,
                 RefreshToken = newRefreshToken,
-                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes)
+                TokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
+                Roles = roles
             };
         }
 
+        private static string GenerateUserName(string email)
+        {
+            // ahmed@example.com → ahmed_a3f9c2 (unique)
+            var localPart = email.Split('@')[0];
+            var uniqueSuffix = Guid.NewGuid().ToString("N")[..6];
+            return $"{localPart}_{uniqueSuffix}".ToLower();
+        }
 
     }
 }

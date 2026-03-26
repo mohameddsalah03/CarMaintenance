@@ -1,0 +1,14 @@
+[
+  {
+    "BookingNumber": "BK-2026-0001",
+    "ScheduledDate": "2026-01-22T10:00:00",
+    "Status": "Confirmed",
+    "Description": "صيانة دورية للسيارة",
+    "TotalCost": 350.00,
+    "PaymentStatus": "Paid",
+    "PaymentMethod": "Cash",
+    "UserId": "9aa803f4-3c24-49a7-bffa-22e0a5d7c1bf",
+    "VehicleId": 3,
+    "TechnicianId": "b5e7b1c0-2b79-423b-af2a-757aa503af30"
+  }
+]
