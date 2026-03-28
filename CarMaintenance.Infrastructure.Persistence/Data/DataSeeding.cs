@@ -168,6 +168,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 Console.WriteLine($"✅ Seeded {validServices.Count} services.");
             }
         }
+
         private async Task SeedBookingsAsync()
         {
             if (!_context.Bookings.Any())
