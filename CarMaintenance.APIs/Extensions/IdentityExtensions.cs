@@ -10,9 +10,7 @@ namespace CarMaintenance.APIs.Extensions
 {
     public static class IdentityExtensions
     {
-        public static IServiceCollection AddIdentityServices(
-            this IServiceCollection services,
-            IConfiguration configuration)
+        public static IServiceCollection AddIdentityServices(this IServiceCollection services,IConfiguration configuration)
         {
             services.Configure<JwtSettings>(configuration.GetSection("jwtSettings"));
 

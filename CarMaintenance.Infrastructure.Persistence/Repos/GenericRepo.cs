@@ -2,6 +2,7 @@
 using CarMaintenance.Core.Domain.Models.Base;
 using CarMaintenance.Infrastructure.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace CarMaintenance.Infrastructure.Persistence.Repos
 {
@@ -31,6 +32,9 @@ namespace CarMaintenance.Infrastructure.Persistence.Repos
         public async Task<int> GetCountAsync(ISpecifications<TEntity, TKey> spec)
             => await ApplaySpecifications(spec).CountAsync();
 
+        // SQL-level SUM — executes in DB, no memory loading
+        public async Task<decimal> GetSumAsync(ISpecifications<TEntity, TKey> spec,Expression<Func<TEntity, decimal>> selector)
+            => await ApplaySpecifications(spec).SumAsync(selector);
 
         #endregion
 

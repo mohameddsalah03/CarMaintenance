@@ -1,5 +1,6 @@
 ﻿using CarMaintenance.Core.Service.Abstraction.Common.Infrastructure;
 using CarMaintenance.Infrastructure.AiServices;
+using CarMaintenance.Infrastructure.PaymobServices;
 using CarMaintenance.Shared.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,9 +13,12 @@ namespace CarMaintenance.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<AISettings>(configuration.GetSection("AISettings"));
 
+            services.Configure<AISettings>(configuration.GetSection("AISettings"));
             services.AddHttpClient<IAiTechnicianService, AiTechnicianService>();
+            
+            services.Configure<PaymobSettings>(configuration.GetSection("PaymobSettings"));
+            services.AddHttpClient<IPaymobService, PaymobService>();
 
             return services;
         }

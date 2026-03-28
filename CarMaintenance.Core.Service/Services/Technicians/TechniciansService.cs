@@ -12,7 +12,9 @@ using CarMaintenance.Shared.DTOs.Technicians.AI;
 using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
+using System.Text;
 
 namespace CarMaintenance.Core.Service.Services.Technicians
 {
@@ -38,25 +40,27 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             _appSettings = appSettings.Value;
         }
 
-        
         public async Task<IEnumerable<TechniciansDto>> GetAllTechniciansAsync()
         {
             var spec = new TechnicianSpecification();
-            var technicians = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(spec);
+            var technicians = await _unitOfWork.GetRepo<Technician, string>()
+                .GetAllWithSpecAsync(spec);
             return _mapper.Map<IEnumerable<TechniciansDto>>(technicians);
         }
 
         public async Task<IEnumerable<TechniciansDto>> GetAvailableTechniciansAsync()
         {
             var spec = new TechnicianSpecification(isAvailable: true);
-            var technicians = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(spec);
+            var technicians = await _unitOfWork.GetRepo<Technician, string>()
+                .GetAllWithSpecAsync(spec);
             return _mapper.Map<IEnumerable<TechniciansDto>>(technicians);
         }
 
         public async Task<TechniciansDto?> GetTechnicianByIdAsync(string id)
         {
             var spec = new TechnicianSpecification(id);
-            var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(spec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>()
+                .GetWithSpecAsync(spec);
 
             if (technician is null)
                 throw new NotFoundException(nameof(Technician), id);
@@ -76,9 +80,7 @@ namespace CarMaintenance.Core.Service.Services.Technicians
 
             var result = await _userManager.CreateAsync(user, createDto.Password);
             if (!result.Succeeded)
-                throw new ValidationException(
-                    "Failed to create technician account",
-                    result.Errors.Select(e => e.Description));
+                throw new ValidationException( "Failed to create technician account",result.Errors.Select(e => e.Description));
 
             await _userManager.AddToRoleAsync(user, "Technician");
 
@@ -95,18 +97,29 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             await _unitOfWork.GetRepo<Technician, string>().AddAsync(technician);
             await _unitOfWork.SaveChangesAsync();
 
+            //  Send set-password link instead of plain-text password
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetToken));
+            var setPasswordUrl = $"{_appSettings.FrontendUrl.TrimEnd('/')}/set-password" +
+                                 $"?email={Uri.EscapeDataString(user.Email!)}&token={encodedToken}";
+
             var emailBody = $@"
                 <h2>مرحباً {user.DisplayName}</h2>
                 <p>تم إنشاء حساب فني صيانة لك في نظام FIXORA.</p>
                 <h3>بيانات الدخول:</h3>
                 <p><strong>البريد الإلكتروني:</strong> {user.Email}</p>
                 <p><strong>اسم المستخدم:</strong> {user.UserName}</p>
-                <p><strong>كلمة المرور:</strong> {createDto.Password}</p>
                 <p><strong>التخصص:</strong> {createDto.Specialization}</p>
                 <br>
-                <p>رابط تسجيل الدخول: {_appSettings.FrontendUrl}/login</p>";
+                <p>يرجى تعيين كلمة المرور الخاصة بك عن طريق الرابط التالي (صالح لمدة 24 ساعة):</p>
+                <a href='{setPasswordUrl}' style='background:#1d4ed8;color:#fff;padding:10px 20px;
+                   border-radius:6px;text-decoration:none;display:inline-block;'>
+                   تعيين كلمة المرور
+                </a>
+                <br><br>
+                <p>رابط تسجيل الدخول بعد تعيين كلمة المرور: {_appSettings.FrontendUrl}/login</p>";
 
-            await _emailService.SendEmailAsync(user.Email!, "حساب فني صيانة جديد - FIXORA", emailBody);
+            await _emailService.SendEmailAsync(user.Email!, "حساب فني صيانة جديد - FIXORA",emailBody);
 
             var spec = new TechnicianSpecification(technician.Id);
             var created = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(spec);
@@ -122,10 +135,13 @@ namespace CarMaintenance.Core.Service.Services.Technicians
                 throw new NotFoundException(nameof(Technician), id);
 
             technician.Specialization = updateDto.Specialization;
+
             if (updateDto.IsAvailable.HasValue)
                 technician.IsAvailable = updateDto.IsAvailable.Value;
+
             if (updateDto.ExperienceYears.HasValue)
                 technician.ExperienceYears = updateDto.ExperienceYears.Value;
+
             var user = technician.User;
 
             if (!string.IsNullOrEmpty(updateDto.DisplayName))
@@ -164,11 +180,22 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             return _mapper.Map<TechniciansDto>(updated!);
         }
 
+        //  Check for active bookings before deleting
         public async Task DeleteTechnicianAsync(string id)
         {
             var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(id);
             if (technician is null)
                 throw new NotFoundException(nameof(Technician), id);
+
+            // Block deletion if technician has active/in-progress bookings
+            var activeBookingSpec = new BookingByTechnicianActiveSpecification(id);
+            var activeCount = await _unitOfWork.GetRepo<Booking, int>()
+                .GetCountAsync(activeBookingSpec);
+
+            if (activeCount > 0)
+                throw new BadRequestException(
+                    $"لا يمكن حذف الفني — لديه {activeCount} حجز نشط حالياً. " +
+                    "يرجى إعادة تعيين الحجوزات أو انتظار اكتمالها قبل الحذف.");
 
             _unitOfWork.GetRepo<Technician, string>().Delete(technician);
             await _unitOfWork.SaveChangesAsync();
@@ -193,7 +220,6 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             return _mapper.Map<TechniciansDto>(technician);
         }
 
-        // AI 
         public async Task<TechnicianStatsDto> GetTechnicianStatsAsync(string id)
         {
             var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(id);

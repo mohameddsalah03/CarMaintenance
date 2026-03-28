@@ -19,5 +19,10 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Admin
         [HttpGet("bookings/{id:int}")]
         public async Task<ActionResult<BookingDetailsDto>> GetBookingDetails(int id)
             => Ok(await _serviceManager.AdminService.GetBookingDetailsAsync(id));
+
+        // GET /api/admin/customers
+        [HttpGet("customers")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAllCustomers()
+            => Ok(await _serviceManager.AdminService.GetAllCustomersAsync());
     }
 }

@@ -16,6 +16,7 @@ using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails;
 using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace CarMaintenance.Core.Service.Services.Bookings
 {
@@ -23,7 +24,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         IUnitOfWork _unitOfWork,
         IMapper _mapper,
         IAiTechnicianService _aiTechnicianService,
-         INotificationService _notificationService
+        INotificationService _notificationService,
+        ILogger<BookingService> _logger              // Proper logger injection
     ) : IBookingService
     {
         #region Customer
@@ -35,14 +37,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var spec = new BookingSpecification(specParams);
             var bookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec);
             var data = _mapper.Map<IEnumerable<BookingDto>>(bookings);
-
             var specCount = new BookingWithFiltrationForCountSpecification(specParams);
             var count = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(specCount);
 
             return new Pagination<BookingDto>(specParams.PageIndex, specParams.PageSize, count)
-            {
-                Data = data
-            };
+            { Data = data };
         }
 
         public async Task<BookingDetailsDto> GetBookingDetailsAsync(int id, string userId)
@@ -78,16 +77,17 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (createBookingDto.ScheduledDate < DateTime.UtcNow)
                 throw new BadRequestException("تاريخ الحجز يجب أن يكون في المستقبل");
 
-            // Validate no duplicate service IDs in the request
+            // 3. Validate no duplicate service IDs
             var requestedServiceIds = createBookingDto.Services.Select(s => s.ServiceId).ToList();
 
             if (requestedServiceIds.Count != requestedServiceIds.Distinct().Count())
-                throw new BadRequestException("لا يمكن إضافة نفس الخدمة أكثر من مرة في نفس الحجز. " + "يرجى مراجعة قائمة الخدمات المختارة.");
+                throw new BadRequestException(
+                    "لا يمكن إضافة نفس الخدمة أكثر من مرة في نفس الحجز.");
 
-            //Validate no active booking exists for this vehicle
+            // 4. Validate no active booking for this vehicle
             var activeBookingSpec = new BookingByVehicleActiveSpecification(createBookingDto.VehicleId);
-
-            var activeBookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(activeBookingSpec);
+            var activeBookings = await _unitOfWork.GetRepo<Booking, int>()
+                .GetAllWithSpecAsync(activeBookingSpec);
 
             if (activeBookings.Any())
             {
@@ -99,32 +99,28 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     "لا يمكن إنشاء حجز جديد حتى يكتمل أو يُلغى الحجز الحالي.");
             }
 
-            // 3. Validate and fetch services
+            // 5. Validate and fetch services
             var services = new List<Domain.Models.Data.Service>();
-
             foreach (var serviceId in requestedServiceIds)
             {
-                var service = await _unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(serviceId);
-
+                var service = await _unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
+                    .GetByIdAsync(serviceId);
                 if (service is null)
                     throw new BadRequestException($"الخدمة برقم {serviceId} غير موجودة");
 
                 services.Add(service);
             }
 
-            // 4. Calculate total cost
+            // 6. Calculate total cost & parse payment method
             decimal totalCost = services.Sum(s => s.BasePrice);
 
-            // 5. Generate booking number
-            var bookingNumber = GenerateBookingNumber();
-
-            // 6. Parse payment method
-            if (!Enum.TryParse<PaymentMethod>(createBookingDto.PaymentMethod, true,out var paymentMethod))
+            if (!Enum.TryParse<PaymentMethod>(createBookingDto.PaymentMethod, true, out var paymentMethod))
                 throw new BadRequestException(
                     $"طريقة دفع غير صحيحة: '{createBookingDto.PaymentMethod}'. " +
                     "القيم المقبولة: Cash, CreditCard");
 
-            // 7. Create Booking entity
+            // 7. Create booking
+            var bookingNumber = GenerateBookingNumber();
             var booking = new Booking
             {
                 BookingNumber = bookingNumber,
@@ -152,9 +148,9 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     Duration = serviceDto.Duration,
                     Status = BookingStatus.Pending
                 };
-                await _unitOfWork.GetRepo<Domain.Models.Data.BookingService, int>().AddAsync(bookingService);
+                await _unitOfWork.GetRepo<Domain.Models.Data.BookingService, int>()
+                    .AddAsync(bookingService);
             }
-
             await _unitOfWork.SaveChangesAsync();
 
             // 9. Auto-assign technician via AI
@@ -164,14 +160,12 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var spec = new BookingSpecification(booking.Id);
             var createdBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
 
-            // Notify the customer that booking was confirmed
             await _notificationService.SendAsync(
                 userId: userId,
                 title: "تم تأكيد حجزك",
                 message: $"تم إنشاء الحجز رقم {booking.BookingNumber} بنجاح. سيتم تعيين فني قريباً.",
                 type: NotificationType.BookingCreated,
-                actionUrl: $"/bookings/{booking.Id}"
-                );
+                actionUrl: $"/bookings/{booking.Id}");
 
             return _mapper.Map<BookingDto>(createdBooking!);
         }
@@ -197,7 +191,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
 
-            //  Notify technician if one was assigned
             if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
             {
                 await _notificationService.SendAsync(
@@ -205,12 +198,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     title: "تم إلغاء الحجز",
                     message: $"قام العميل {booking.User.DisplayName} بإلغاء الحجز رقم {booking.BookingNumber}.",
                     type: NotificationType.BookingCancelled,
-                    actionUrl: $"/technician/bookings/{booking.Id}"
-                    );
+                    actionUrl: $"/technician/bookings/{booking.Id}");
             }
-
         }
 
+       
         public async Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto approveAdditionalIssue, string userId)
         {
             var issue = await _unitOfWork.GetRepo<AdditionalIssue, int>().GetByIdAsync(approveAdditionalIssue.IssueId);
@@ -225,7 +217,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 throw new NotFoundException(nameof(Booking), issue.BookingId);
 
             if (booking.UserId != userId)
-                throw new ForbiddenException( "ليس لديك صلاحية للموافقة على هذه المشكلة");
+                throw new ForbiddenException("ليس لديك صلاحية للموافقة على هذه المشكلة");
 
             if (booking.Status != BookingStatus.WaitingClientApproval)
                 throw new BadRequestException(
@@ -233,10 +225,15 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     $"حالة الحجز الحالية: '{booking.Status}'. " +
                     "يجب أن يكون الحجز في حالة WaitingClientApproval.");
 
-            if (issue.IsApproved)
-                throw new BadRequestException("تمت الموافقة على هذه المشكلة بالفعل.");
+            // Check using AdditionalIssueStatus instead of bool
+            if (issue.Status != AdditionalIssueStatus.Pending)
+                throw new BadRequestException("تمت معالجة هذه المشكلة بالفعل.");
 
-            issue.IsApproved = approveAdditionalIssue.IsApproved;
+            //  Set enum status instead of bool
+            issue.Status = approveAdditionalIssue.IsApproved
+                ? AdditionalIssueStatus.Approved
+                : AdditionalIssueStatus.Rejected;
+
             _unitOfWork.GetRepo<AdditionalIssue, int>().Update(issue);
 
             if (approveAdditionalIssue.IsApproved)
@@ -247,19 +244,18 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
 
-            //  Notify technician of customer's decision
             if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
             {
                 var approved = approveAdditionalIssue.IsApproved;
                 await _notificationService.SendAsync(
                     userId: booking.AssignedTechnician.UserId,
                     title: approved ? "وافق العميل على التكلفة الإضافية" : "رفض العميل التكلفة الإضافية",
-                    message: $"العميل {booking.User.DisplayName} {(approved ? "وافق على" : "رفض")} " +$"التكلفة الإضافية للحجز رقم {booking.BookingNumber}.",
-                    type: approved? NotificationType.AdditionalIssueApproved: NotificationType.AdditionalIssueRejected,
-                    actionUrl: $"/technician/bookings/{booking.Id}"
-                    );
+                    message: $"العميل {booking.User.DisplayName} {(approved ? "وافق على" : "رفض")} " +
+                               $"التكلفة الإضافية للحجز رقم {booking.BookingNumber}.",
+                    type: approved ? NotificationType.AdditionalIssueApproved
+                                        : NotificationType.AdditionalIssueRejected,
+                    actionUrl: $"/technician/bookings/{booking.Id}");
             }
-
         }
 
         public async Task<InvoiceDto> GetBookingInvoiceAsync(int bookingId, string userId)
@@ -280,9 +276,9 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 throw new BadRequestException("الفاتورة غير متاحة - الحجز ملغى");
 
             decimal servicesCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0);
-
-            decimal additionalCost = booking.AdditionalIssues.Where(ai => ai.IsApproved)
-                                                              .Sum(ai => ai.EstimatedCost);
+            decimal additionalCost = booking.AdditionalIssues
+                .Where(ai => ai.IsApproved) // Uses computed property — still works
+                .Sum(ai => ai.EstimatedCost);
 
             return new InvoiceDto
             {
@@ -299,7 +295,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 TechnicianName = booking.AssignedTechnician?.User?.DisplayName!,
                 TechnicianSpecialization = booking.AssignedTechnician?.Specialization!,
                 Services = _mapper.Map<List<InvoiceServiceItemDto>>(booking.BookingServices),
-                ApprovedIssues = _mapper.Map<List<InvoiceAdditionalIssueDto>>(booking.AdditionalIssues.Where(ai => ai.IsApproved).ToList()),
+                ApprovedIssues = _mapper.Map<List<InvoiceAdditionalIssueDto>>(
+                    booking.AdditionalIssues.Where(ai => ai.IsApproved).ToList()),
                 ServicesCost = servicesCost,
                 AdditionalCost = additionalCost,
                 TotalCost = booking.TotalCost,
@@ -324,20 +321,16 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var spec = new BookingSpecification(specParams);
             var bookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec);
             var data = _mapper.Map<IEnumerable<BookingDto>>(bookings);
-
             var specCount = new BookingWithFiltrationForCountSpecification(specParams);
             var count = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(specCount);
 
             return new Pagination<BookingDto>(specParams.PageIndex, specParams.PageSize, count)
-            {
-                Data = data
-            };
+            { Data = data };
         }
 
-        // ADDED - Technician can view full details of their assigned booking
+        //  This method now has a matching endpoint in the controller
         public async Task<BookingDetailsDto> GetBookingDetailsForTechnicianAsync(int id, string userId)
         {
-            // Verify caller is a valid technician
             var techSpec = new TechnicianSpecification(userId, byUserId: true);
             var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
 
@@ -350,9 +343,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (booking == null)
                 throw new NotFoundException(nameof(Booking), id);
 
-            // Technician can only view bookings assigned to them
             if (booking.TechnicianId != technician.Id)
-                throw new ForbiddenException( "ليس لديك صلاحية لعرض هذا الحجز. هذا الحجز غير معين عليك.");
+                throw new ForbiddenException("ليس لديك صلاحية لعرض هذا الحجز. هذا الحجز غير معين عليك.");
 
             return _mapper.Map<BookingDetailsDto>(booking);
         }
@@ -372,7 +364,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 throw new NotFoundException(nameof(Booking), bookingId);
 
             if (booking.TechnicianId != technician.Id)
-                throw new ForbiddenException( "ليس لديك صلاحية لإضافة مشاكل إضافية لهذا الحجز");
+                throw new ForbiddenException("ليس لديك صلاحية لإضافة مشاكل إضافية لهذا الحجز");
 
             if (booking.Status != BookingStatus.InProgress)
                 throw new BadRequestException(
@@ -380,11 +372,14 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     $"حالة الحجز الحالية: '{booking.Status}'. " +
                     "يجب أن يكون الحجز في حالة InProgress.");
 
-            // Prevent adding a new issue while another is still pending approval
-            var hasPendingIssue = booking.AdditionalIssues.Any(ai => !ai.IsApproved);
+            //  Correct pending check — uses AdditionalIssueStatus.Pending
+            var hasPendingIssue = booking.AdditionalIssues
+                .Any(ai => ai.Status == AdditionalIssueStatus.Pending);
 
             if (hasPendingIssue)
-                throw new BadRequestException("يوجد مشكلة إضافية في انتظار موافقة العميل. " +"انتظر رد العميل قبل إضافة مشكلة جديدة.");
+                throw new BadRequestException(
+                    "يوجد مشكلة إضافية في انتظار موافقة العميل. " +
+                    "انتظر رد العميل قبل إضافة مشكلة جديدة.");
 
             var additionalIssue = new AdditionalIssue
             {
@@ -394,26 +389,22 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 EstimatedDurationMinutes = issueDto.EstimatedDurationMinutes,
                 CreatedAt = DateTime.UtcNow,
                 BookingId = bookingId,
-                IsApproved = false
+                Status = AdditionalIssueStatus.Pending
             };
 
             await _unitOfWork.GetRepo<AdditionalIssue, int>().AddAsync(additionalIssue);
 
-            // System automatically sets status to WaitingClientApproval
             booking.Status = BookingStatus.WaitingClientApproval;
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
-
             await _unitOfWork.SaveChangesAsync();
 
-            //  Notify customer that technician found an additional issue
             await _notificationService.SendAsync(
                 userId: booking.UserId,
                 title: "تكلفة إضافية مطلوبة",
                 message: $"الفني اكتشف مشكلة إضافية في حجزك رقم {booking.BookingNumber}: " +
-                         $"{issueDto.Title}. التكلفة المتوقعة: {issueDto.EstimatedCost} جنيه.",
+                           $"{issueDto.Title}. التكلفة المتوقعة: {issueDto.EstimatedCost} جنيه.",
                 type: NotificationType.AdditionalIssueAdded,
-                actionUrl: $"/bookings/{bookingId}")
-                ;
+                actionUrl: $"/bookings/{bookingId}");
 
             return _mapper.Map<AdditionalIssueDto>(additionalIssue);
         }
@@ -435,21 +426,24 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (booking.TechnicianId != technician.Id)
                 throw new ForbiddenException("ليس لديك صلاحية لتحديث هذا الحجز");
 
-            // Cannot change status while waiting for customer approval
             if (booking.Status == BookingStatus.WaitingClientApproval)
-                throw new BadRequestException("الحجز في انتظار موافقة العميل على المشكلة الإضافية. " +"لا يمكن تغيير الحالة حتى يرد العميل.");
+                throw new BadRequestException(
+                    "الحجز في انتظار موافقة العميل على المشكلة الإضافية. " +
+                    "لا يمكن تغيير الحالة حتى يرد العميل.");
 
             if (!Enum.TryParse<BookingStatus>(statusDto.Status, true, out var newStatus))
-                throw new BadRequestException( $"حالة غير صحيحة: '{statusDto.Status}'. " +"القيم المسموحة: InProgress, Completed");
+                throw new BadRequestException(
+                    $"حالة غير صحيحة: '{statusDto.Status}'. " +
+                    "القيم المسموحة: InProgress, Completed");
 
-            // Prevent technician from manually setting system-controlled statuses
             if (newStatus == BookingStatus.WaitingClientApproval)
-                throw new BadRequestException( "لا يمكن تعيين هذه الحالة يدوياً. " +"تُضبط تلقائياً عند إضافة مشكلة إضافية.");
+                throw new BadRequestException(
+                    "لا يمكن تعيين هذه الحالة يدوياً. " +
+                    "تُضبط تلقائياً عند إضافة مشكلة إضافية.");
 
             if (newStatus == BookingStatus.Cancelled)
-                throw new BadRequestException( "لا يمكن للفني إلغاء الحجز.");
+                throw new BadRequestException("لا يمكن للفني إلغاء الحجز.");
 
-            // Validate allowed transitions
             var isValidTransition = (booking.Status, newStatus) switch
             {
                 (BookingStatus.Pending, BookingStatus.InProgress) => true,
@@ -468,9 +462,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             {
                 booking.PaymentStatus = PaymentStatus.Paid;
 
-                // Auto-update vehicle last maintenance date
-                var vehicle = await _unitOfWork.GetRepo<Vehicle, int>().GetByIdAsync(booking.VehicleId);
-
+                var vehicle = await _unitOfWork.GetRepo<Vehicle, int>()
+                    .GetByIdAsync(booking.VehicleId);
                 if (vehicle != null)
                 {
                     vehicle.LastMaintenanceDate = DateTime.UtcNow;
@@ -481,24 +474,24 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
 
-            //  Notify customer when booking is completed
             if (newStatus == BookingStatus.Completed)
             {
                 await _notificationService.SendAsync(
                     userId: booking.UserId,
                     title: "تم إكمال الحجز بنجاح",
-                    message: $"تم الانتهاء من صيانة سيارتك في الحجز رقم {booking.BookingNumber}. " +"يمكنك الآن استلام سيارتك.",
+                    message: $"تم الانتهاء من صيانة سيارتك في الحجز رقم {booking.BookingNumber}. " +
+                               "يمكنك الآن استلام سيارتك.",
                     type: NotificationType.BookingCompleted,
                     actionUrl: $"/bookings/{booking.Id}");
             }
 
-            //  Notify customer when technician starts working
             if (newStatus == BookingStatus.InProgress)
             {
                 await _notificationService.SendAsync(
                     userId: booking.UserId,
                     title: "بدأ الفني العمل على سيارتك",
-                    message: $"بدأ الفني {booking.AssignedTechnician?.User?.DisplayName} " + $"العمل على حجزك رقم {booking.BookingNumber}.",
+                    message: $"بدأ الفني {booking.AssignedTechnician?.User?.DisplayName} " +
+                               $"العمل على حجزك رقم {booking.BookingNumber}.",
                     type: NotificationType.TechnicianAssigned,
                     actionUrl: $"/bookings/{booking.Id}");
             }
@@ -518,14 +511,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var spec = new BookingSpecification(specParams);
             var bookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec);
             var data = _mapper.Map<IEnumerable<BookingDto>>(bookings);
-
             var countSpec = new BookingWithFiltrationForCountSpecification(specParams);
             var count = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(countSpec);
 
             return new Pagination<BookingDto>(specParams.PageIndex, specParams.PageSize, count)
-            {
-                Data = data
-            };
+            { Data = data };
         }
 
         public async Task<BookingDto> AssignTechnicianAsync(int bookingId)
@@ -558,8 +548,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (aiResult?.RecommendedTechnicianId != null)
             {
                 var techSpec = new TechnicianSpecification(aiResult.RecommendedTechnicianId);
-                var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
-
+                var technician = await _unitOfWork.GetRepo<Technician, string>()
+                    .GetWithSpecAsync(techSpec);
                 if (technician != null && technician.IsAvailable)
                     technicianId = technician.Id;
             }
@@ -584,6 +574,46 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return _mapper.Map<BookingDto>(updatedBooking!);
         }
 
+        //  Admin can cancel any booking
+        public async Task CancelBookingByAdminAsync(int id)
+        {
+            var spec = new BookingSpecification(id);
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
+
+            if (booking == null)
+                throw new NotFoundException(nameof(Booking), id);
+
+            if (booking.Status == BookingStatus.Completed)
+                throw new BadRequestException("لا يمكن إلغاء حجز مكتمل");
+
+            if (booking.Status == BookingStatus.Cancelled)
+                throw new BadRequestException("الحجز ملغى بالفعل");
+
+            booking.Status = BookingStatus.Cancelled;
+            _unitOfWork.GetRepo<Booking, int>().Update(booking);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Notify customer
+            await _notificationService.SendAsync(
+                userId: booking.UserId,
+                title: "تم إلغاء حجزك",
+                message: $"تم إلغاء الحجز رقم {booking.BookingNumber} من قِبَل الإدارة.",
+                type: NotificationType.BookingCancelled,
+                actionUrl: $"/bookings/{booking.Id}");
+
+            // Notify technician if assigned
+            if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.AssignedTechnician.UserId,
+                    title: "تم إلغاء الحجز من قِبَل الإدارة",
+                    message: $"تم إلغاء الحجز رقم {booking.BookingNumber} من قِبَل الإدارة.",
+                    type: NotificationType.BookingCancelled,
+                    actionUrl: $"/technician/bookings/{booking.Id}");
+            }
+        }
+
+
         #endregion
 
         #region Private Helpers
@@ -606,14 +636,13 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 };
 
                 var aiResult = await _aiTechnicianService.GetTechnicianRecommendationAsync(aiRequest);
-
                 string? technicianId = null;
 
                 if (aiResult?.RecommendedTechnicianId != null)
                 {
                     var techSpec = new TechnicianSpecification(aiResult.RecommendedTechnicianId);
-                    var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
-
+                    var technician = await _unitOfWork.GetRepo<Technician, string>()
+                        .GetWithSpecAsync(techSpec);
                     if (technician != null && technician.IsAvailable)
                         technicianId = technician.Id;
                 }
@@ -621,7 +650,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 if (technicianId == null)
                 {
                     var availableSpec = new TechnicianSpecification(isAvailable: true);
-                    var available = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(availableSpec);
+                    var available = await _unitOfWork.GetRepo<Technician, string>()
+                        .GetAllWithSpecAsync(availableSpec);
                     technicianId = available.OrderByDescending(t => t.Rating).FirstOrDefault()?.Id;
                 }
 
@@ -631,26 +661,29 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     _unitOfWork.GetRepo<Booking, int>().Update(booking);
                     await _unitOfWork.SaveChangesAsync();
 
-                    // Notify customer that a technician was assigned
                     var techSpec = new TechnicianSpecification(technicianId);
-                    var assignedTechnician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
+                    var assignedTechnician = await _unitOfWork.GetRepo<Technician, string>()
+                        .GetWithSpecAsync(techSpec);
 
                     if (assignedTechnician != null)
                     {
                         await _notificationService.SendAsync(
                             userId: booking.UserId,
                             title: "تم تعيين فني لحجزك",
-                            message: $"تم تعيين الفني {assignedTechnician.User.DisplayName} " + $"({assignedTechnician.Specialization}) للحجز رقم {booking.BookingNumber}.",
+                            message: $"تم تعيين الفني {assignedTechnician.User.DisplayName} " +
+                                       $"({assignedTechnician.Specialization}) للحجز رقم {booking.BookingNumber}.",
                             type: NotificationType.TechnicianAssigned,
                             actionUrl: $"/bookings/{booking.Id}");
                     }
-                
-
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"AI Assignment Error: {ex.Message}");
+                // FIX #7: Proper structured logging instead of Console.WriteLine
+                _logger.LogWarning(ex,
+                    "[AI Assignment] Failed to auto-assign technician for Booking {BookingId} ({BookingNumber}). " +
+                    "Booking created without technician — manual assignment required.",
+                    booking.Id, booking.BookingNumber);
             }
         }
 
@@ -661,8 +694,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return $"BK-{date}-{unique}";
         }
 
-        private async Task<TechnicianAvailableSlotsDto> GetTechnicianAvailableSlotsAsync(
-            string technicianId)
+        private async Task<TechnicianAvailableSlotsDto> GetTechnicianAvailableSlotsAsync(string technicianId)
         {
             var techSpec = new TechnicianSpecification(technicianId);
             var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
@@ -671,7 +703,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 return new TechnicianAvailableSlotsDto { TechnicianId = technicianId };
 
             var bookingSpec = new BookingByTechnicianActiveSpecification(technicianId);
-            var activeBookings = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(bookingSpec)).ToList();
+            var activeBookings = (await _unitOfWork.GetRepo<Booking, int>()
+                .GetAllWithSpecAsync(bookingSpec)).ToList();
 
             var bookedDates = activeBookings.Select(b => b.ScheduledDate).ToList();
             var workingHours = new[] { 9, 11, 13, 15, 17 };
@@ -681,12 +714,10 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             for (int day = 1; day <= 3 && availableSlots.Count < 6; day++)
             {
                 var date = today.AddDays(day);
-
                 foreach (var hour in workingHours)
                 {
                     var slot = date.AddHours(hour);
                     bool isBooked = bookedDates.Any(b => Math.Abs((b - slot).TotalHours) < 2);
-
                     if (!isBooked)
                     {
                         availableSlots.Add(new AvailableSlotDto
@@ -695,7 +726,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                             Label = FormatSlotLabel(slot, today)
                         });
                     }
-
                     if (availableSlots.Count >= 6) break;
                 }
             }

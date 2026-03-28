@@ -6,6 +6,7 @@ using CarMaintenance.Core.Service.Abstraction.Services.Admin;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth;
 using CarMaintenance.Core.Service.Abstraction.Services.Bookings;
 using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
+using CarMaintenance.Core.Service.Abstraction.Services.Payments;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
@@ -30,6 +31,7 @@ namespace CarMaintenance.Core.Service.Services
         private readonly Lazy<IReviewService> _reviewService;
         private readonly Lazy<INotificationService> _notificationService;
         private readonly Lazy<IAdminService> _adminService;
+        private readonly Lazy<IPaymentService> _paymentService;
 
         public ServiceManager(
             IUnitOfWork unitOfWork,
@@ -58,6 +60,7 @@ namespace CarMaintenance.Core.Service.Services
             _notificationService = new Lazy<INotificationService>(() => _serviceProvider.GetRequiredService<INotificationService>());
             
             _adminService = new Lazy<IAdminService>(() => _serviceProvider.GetRequiredService<IAdminService>());
+            _paymentService = new Lazy<IPaymentService>(() => _serviceProvider.GetRequiredService<IPaymentService>());
 
         }
 
@@ -72,5 +75,7 @@ namespace CarMaintenance.Core.Service.Services
         public INotificationService NotificationService => _notificationService.Value;
 
         public IAdminService AdminService => _adminService.Value;
+
+        public IPaymentService PaymentService => _paymentService.Value;
     }
 }
