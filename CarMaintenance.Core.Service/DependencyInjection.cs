@@ -27,7 +27,7 @@ namespace CarMaintenance.Core.Service
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddAutoMapper(typeof(MappingProfile));
+            services.AddAutoMapper(m=> m.AddProfile<MappingProfile>());
 
             services.AddScoped(typeof(IServiceManager), typeof(ServiceManager));
 
