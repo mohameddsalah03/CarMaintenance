@@ -16,6 +16,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasMaxLength(300)
                 .HasColumnType("nvarchar(300)")
                 .IsRequired();
+            builder.Property(ai => ai.Description)
+                    .HasMaxLength(1000)
+                    .HasColumnType("nvarchar(1000)")
+                    .IsRequired(false);
 
             builder.Property(ai => ai.Description)
                 .HasMaxLength(1000)

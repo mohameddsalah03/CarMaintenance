@@ -30,7 +30,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
     {
         #region Customer
 
-        public async Task<Pagination<BookingDto>> GetMyBookingsAsync(BookingSpecParams specParams, string userId)
+        public async Task<Pagination<BookingDto>> GetMyBookingsAsync(
+            BookingSpecParams specParams, string userId)
         {
             specParams.UserId = userId;
             var spec = new BookingSpecification(specParams);
@@ -63,7 +64,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return result;
         }
 
-        public async Task<BookingDto> CreateBookingAsync(CreateBookingDto createBookingDto, string userId)
+        public async Task<BookingDto> CreateBookingAsync( CreateBookingDto createBookingDto, string userId)
         {
             // 1. Validate vehicle ownership
             var vehicle = await _unitOfWork.GetRepo<Vehicle, int>()
@@ -106,6 +107,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     .GetByIdAsync(serviceId);
                 if (service is null)
                     throw new BadRequestException($"الخدمة برقم {serviceId} غير موجودة");
+
                 services.Add(service);
             }
 
@@ -496,6 +498,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             var updatedSpec = new BookingSpecification(id);
             var updatedBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(updatedSpec);
+
             return _mapper.Map<BookingDto>(updatedBooking!);
         }
 
@@ -503,7 +506,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         #region Admin
 
-        public async Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams)
+        public async Task<Pagination<BookingDto>> GetAllBookingsAsync( BookingSpecParams specParams)
         {
             var spec = new BookingSpecification(specParams);
             var bookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec);
@@ -554,8 +557,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (technicianId == null)
             {
                 var availableSpec = new TechnicianSpecification(isAvailable: true);
-                var available = await _unitOfWork.GetRepo<Technician, string>()
-                    .GetAllWithSpecAsync(availableSpec);
+                var available = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(availableSpec);
                 technicianId = available.OrderByDescending(t => t.Rating).FirstOrDefault()?.Id;
             }
 
@@ -568,6 +570,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             var updatedSpec = new BookingSpecification(bookingId);
             var updatedBooking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(updatedSpec);
+
             return _mapper.Map<BookingDto>(updatedBooking!);
         }
 
