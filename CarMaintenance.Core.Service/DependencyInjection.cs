@@ -43,6 +43,11 @@ namespace CarMaintenance.Core.Service
             services.AddScoped<IPaymentService, PaymentService>();
             //
 
+            services.AddScoped<INotificationService, NotificationService>();
+
+            services.AddScoped<IAdminService, AdminService>();
+
+
             return services;
         }
     }
