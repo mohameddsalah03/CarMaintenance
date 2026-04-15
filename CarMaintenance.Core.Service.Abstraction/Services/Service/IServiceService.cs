@@ -1,5 +1,6 @@
 ﻿using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.DTOs.Services;
+using CarMaintenance.Shared.DTOs.Services.AnalyzeProblem;
 
 namespace CarMaintenance.Core.Service.Abstraction.Services
 {
@@ -16,5 +17,8 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
 
         // Get Service Details with Technicians
         Task<ServiceDetailsDto?> GetServiceDetailsAsync(int id);
+
+        // AI-powered pre-booking analysis
+        Task<AnalyzeProblemResponseDto> AnalyzeProblemAsync(AnalyzeProblemRequestDto requestDto, string? userId);
     }
 }

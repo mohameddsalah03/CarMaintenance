@@ -24,5 +24,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Admin
         [HttpGet("customers")]
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAllCustomers()
             => Ok(await _serviceManager.AdminService.GetAllCustomersAsync());
+
     }
 }

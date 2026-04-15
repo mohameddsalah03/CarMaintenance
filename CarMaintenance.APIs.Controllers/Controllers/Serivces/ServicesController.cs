@@ -2,8 +2,10 @@
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.DTOs.Services;
+using CarMaintenance.Shared.DTOs.Services.AnalyzeProblem;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarMaintenance.APIs.Controllers.Controllers.Services
 {
@@ -68,5 +70,17 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Services
         }
 
         #endregion
+
+
+        [AllowAnonymous]
+        [HttpPost("analyze-problem")]
+        public async Task<ActionResult<AnalyzeProblemResponseDto>> AnalyzeProblem([FromBody] AnalyzeProblemRequestDto requestDto)
+        {
+            // Extract userId only if a valid JWT is present — null is safe to pass
+            var userId = User.Identity?.IsAuthenticated == true? User.FindFirstValue(ClaimTypes.NameIdentifier): null;
+
+            var result = await serviceManager.ServiceService.AnalyzeProblemAsync(requestDto, userId);
+            return Ok(result);
+        }
     }
 }

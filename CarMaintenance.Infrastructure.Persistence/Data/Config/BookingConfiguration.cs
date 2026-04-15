@@ -32,6 +32,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
             builder.Property(b => b.TotalCost)
                 .HasColumnType("decimal(18,2)")
                 .IsRequired();
+            
+            builder.Property(b => b.TechnicianReport)
+                   .HasMaxLength(2000)
+                   .IsRequired(false);
 
             // To Store String Not Int in DB
             builder.Property(b => b.Status)

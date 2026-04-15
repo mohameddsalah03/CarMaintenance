@@ -60,19 +60,23 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.DisplayName))
                 .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.User.Id))
                 .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.User.PhoneNumber))
+                .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.User.Email))
                 .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Vehicle.Brand))
                 .ForMember(dest => dest.Model, opt => opt.MapFrom(src => src.Vehicle.Model))
                 .ForMember(dest => dest.PlateNumber, opt => opt.MapFrom(src => src.Vehicle.PlateNumber))
-                .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
-                .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.Id : null)) 
-                .ForMember(dest => dest.TechnicianSpecialization, opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.Specialization : null))
-                .ForMember(dest => dest.TechnicianRate,opt => opt.MapFrom(src =>src.AssignedTechnician != null ? src.AssignedTechnician.Rating : (decimal?)null))
+                .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.AssignedTechnician != null ? src.AssignedTechnician.User.DisplayName : null))
+                .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src => src.AssignedTechnician != null ? src.AssignedTechnician.Id : null))
+                .ForMember(dest => dest.TechnicianSpecialization, opt => opt.MapFrom(src => src.AssignedTechnician != null ? src.AssignedTechnician.Specialization : null))
+                .ForMember(dest => dest.TechnicianRate, opt => opt.MapFrom(src => src.AssignedTechnician != null ? src.AssignedTechnician.Rating : (decimal?)null))
+                .ForMember(dest => dest.TechnicianReport, opt => opt.MapFrom(src => src.TechnicianReport))
+                .ForMember(dest => dest.TechnicianExperienceYears, opt => opt.MapFrom(src => src.AssignedTechnician!.ExperienceYears))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
                 .ForMember(dest => dest.BookingServiceDetailsDtos, opt => opt.MapFrom(src => src.BookingServices));
-            
-            CreateMap<Review, ReviewSummaryDto>();
+
+            CreateMap<Review, ReviewSummaryDto>()
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.DisplayName));
 
             CreateMap<Booking, BookingDetailsDto>()
                 .IncludeBase<Booking, BookingDto>()

@@ -12,6 +12,7 @@ public class Booking : BaseEntity<int>
     public decimal TotalCost { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
+    public string? TechnicianReport { get; set; }
 
     // Foreign Keys
     public string UserId { get; set; } = null!;

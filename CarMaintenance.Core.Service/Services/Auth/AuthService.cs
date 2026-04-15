@@ -7,6 +7,7 @@ using CarMaintenance.Shared.Settings;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -59,8 +60,11 @@ namespace CarMaintenance.Core.Service.Services.Auth
         }
         public async Task<UserDto> RegisterAsync(RegisterDto registerDto)
         {
-            var userName = GenerateUserName(registerDto.Email);
+            var displayNameTaken = await _userManager.Users.AnyAsync(u => u.DisplayName == registerDto.DisplayName);
+            if (displayNameTaken)
+                throw new BadRequestException($"الاسم '{registerDto.DisplayName}' مستخدم بالفعل. " + "يرجى اختيار اسم عرض مختلف.");
 
+            var userName = GenerateUserName(registerDto.Email); 
             var user = new ApplicationUser()
             {
                 DisplayName = registerDto.DisplayName,
@@ -114,16 +118,17 @@ namespace CarMaintenance.Core.Service.Services.Auth
 
                 if (user is null)
                 {
-                    //  Use same GenerateUserName strategy as RegisterAsync
-                    // to avoid username = email (which breaks uniqueness if email has special chars
-                    // or conflicts with manually registered users)
+                    var displayNameTaken = await _userManager.Users.AnyAsync(u => u.DisplayName == payload.Name);
+                    // For Google sign-in, append a short suffix if the name is taken
+                    var displayName = displayNameTaken? $"{payload.Name} {Guid.NewGuid().ToString("N")[..4]}" : payload.Name;
+                   
                     var userName = GenerateUserName(payload.Email);
 
                     user = new ApplicationUser
                     {
                         DisplayName = payload.Name,
                         Email = payload.Email,
-                        UserName = userName,      // ← was: payload.Email (bug)
+                        UserName = userName,      
                         EmailConfirmed = true
                     };
 
