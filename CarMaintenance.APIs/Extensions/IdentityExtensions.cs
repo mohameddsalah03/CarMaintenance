@@ -23,6 +23,7 @@ namespace CarMaintenance.APIs.Extensions
                 identityOptions.Password.RequireUppercase = true;
                 identityOptions.Password.RequireLowercase = true;
                 identityOptions.Password.RequireDigit = true;
+                identityOptions.User.AllowedUserNameCharacters = null!;
                 identityOptions.Lockout.MaxFailedAccessAttempts = 5;
                 identityOptions.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             })

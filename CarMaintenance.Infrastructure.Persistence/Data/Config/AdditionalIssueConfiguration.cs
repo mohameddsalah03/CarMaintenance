@@ -21,10 +21,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                     .HasColumnType("nvarchar(1000)")
                     .IsRequired(false);
 
-            builder.Property(ai => ai.Description)
-                .HasMaxLength(1000)
-                .HasColumnType("nvarchar(1000)")
-                .IsRequired(false);
 
             builder.Property(ai => ai.EstimatedCost)
                 .HasColumnType("decimal(18,2)")

@@ -2,15 +2,24 @@
 using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Domain.Specifications.Technicians;
+using CarMaintenance.Core.Domain.Specifications.Vehicles;
+using CarMaintenance.Core.Service.Abstraction.Common.Infrastructure;
 using CarMaintenance.Core.Service.Abstraction.Services;
+using CarMaintenance.Shared.DTOs.AI.Request;
+using CarMaintenance.Shared.DTOs.AI.Response;
 using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.DTOs.Services;
+using CarMaintenance.Shared.DTOs.Services.AnalyzeProblem;
 using CarMaintenance.Shared.DTOs.Technicians;
 using CarMaintenance.Shared.Exceptions;
 
 namespace CarMaintenance.Core.Service
 {
-    public class ServiceService(IUnitOfWork unitOfWork , IMapper mapper) : IServiceService
+    public class ServiceService(
+        IUnitOfWork unitOfWork ,
+        IMapper mapper,
+        IAiDiagnosisService _aiDiagnosisService
+        ) : IServiceService
     {
 
         public async Task<Pagination<ServiceDto>> GetServicesAsync(ServiceSpecParams specParams)
@@ -95,9 +104,112 @@ namespace CarMaintenance.Core.Service
             return serviceDetails;
         }
 
-        
+
 
         #endregion
+
+
+        public async Task<AnalyzeProblemResponseDto> AnalyzeProblemAsync(AnalyzeProblemRequestDto requestDto, string? userId)
+        {
+            // 1. prepare ai request for aiDiagnosisService
+            var aiRequest = new AiDiagnosisRequestDto
+            {
+                ProblemDescription = requestDto.ProblemDescription,
+                VehicleContext = await BuildVehicleContextAsync(requestDto.VehicleId, userId)
+            };
+
+            // 2. Call AI 
+            var aiResult = await _aiDiagnosisService.AnalyzeProblemAsync(aiRequest);
+            
+
+            if (aiResult is null)
+            {
+                return new AnalyzeProblemResponseDto
+                {
+                    Status = "unknown",
+                    Message = "التشخيص الذكي غير متاح حالياً، يمكنك اختيار الخدمة يدوياً"
+                };
+            }
+
+            // 4. AI returned "unknown" — no services to validate
+            if (aiResult.Status == "unknown" || !aiResult.RecommendedServices.Any())
+            {
+                return new AnalyzeProblemResponseDto
+                {
+                    Status = aiResult.Status,
+                    Message = aiResult.Message ?? "مش قدرنا نحدد المشكلة، ممكن توضح أكتر؟"
+                };
+            }
+
+            // 5. Validate every ServiceId the AI returned against our SQL Services table.
+            var validatedSuggestions = await ValidateAndEnrichServiceIdsAsync(aiResult.RecommendedServices);
+
+            if (!validatedSuggestions.Any())
+            {
+               
+                return new AnalyzeProblemResponseDto
+                {
+                    Status = "unknown",
+                    Message = "تعذّر تحديد الخدمة المناسبة، يمكنك اختيارها يدوياً"
+                };
+            }
+
+            return new AnalyzeProblemResponseDto
+            {
+                Status = aiResult.Status,
+                SuggestedServices = validatedSuggestions,
+                Message = aiResult.Message
+            };
+        }
+
+
+        //  Private helpers
+        private async Task<List<ValidatedServiceSuggestionDto>> ValidateAndEnrichServiceIdsAsync(List<AiRecommendedServiceDto> aiServices)
+        {
+            var validated = new List<ValidatedServiceSuggestionDto>();
+
+            foreach (var aiSvc in aiServices)
+            {
+                var dbService = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(aiSvc.ServiceId);
+
+                if (dbService is null)
+                {
+                    continue;
+                }
+
+                validated.Add(new ValidatedServiceSuggestionDto
+                {
+                    ServiceId = dbService.Id,
+                    ServiceName = dbService.Name,              // authoritative name from DB
+                    Category = dbService.Category,
+                    BasePrice = dbService.BasePrice,          // pricing always from DB
+                    EstimatedDurationMinutes = dbService.EstimatedDurationMinutes,
+                    Confidence = aiSvc.Confidence
+                });
+            }
+
+            return validated;
+        }
+
+       
+        private async Task<AiVehicleContextDto?> BuildVehicleContextAsync(int? vehicleId, string? userId)
+        {
+            if (vehicleId is null || string.IsNullOrEmpty(userId))
+                return null;
+
+            var spec = new VehicleSpecification(vehicleId.Value, userId);
+            var vehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(spec);
+
+            if (vehicle is null)
+                return null;
+
+            return new AiVehicleContextDto
+            {
+                Brand = vehicle.Brand,
+                Model = vehicle.Model,
+                Year = vehicle.Year,
+            };
+        }
 
     }
 }

@@ -13,6 +13,7 @@ using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text;
 
@@ -70,6 +71,12 @@ namespace CarMaintenance.Core.Service.Services.Technicians
 
         public async Task<TechniciansDto> CreateTechnicianAsync(CreateTechnicianDto createDto)
         {
+            
+            var displayNameTaken = await _userManager.Users.AnyAsync(u => u.DisplayName == createDto.DisplayName);
+
+            if (displayNameTaken)
+                throw new BadRequestException($"الاسم '{createDto.DisplayName}' مستخدم بالفعل من قِبَل مستخدم آخر. " + "يرجى اختيار اسم عرض مختلف.");
+
             var user = new ApplicationUser
             {
                 DisplayName = createDto.DisplayName,
@@ -144,8 +151,16 @@ namespace CarMaintenance.Core.Service.Services.Technicians
 
             var user = technician.User;
 
-            if (!string.IsNullOrEmpty(updateDto.DisplayName))
+            if (!string.IsNullOrEmpty(updateDto.DisplayName) &&
+                updateDto.DisplayName != user.DisplayName)
+            {
+                var displayNameTaken = await _userManager.Users.AnyAsync(u => u.DisplayName == updateDto.DisplayName && u.Id != user.Id);
+
+                if (displayNameTaken)
+                    throw new BadRequestException($"الاسم '{updateDto.DisplayName}' مستخدم بالفعل من قِبَل مستخدم آخر. " + "يرجى اختيار اسم عرض مختلف.");
+
                 user.DisplayName = updateDto.DisplayName;
+            }
 
             if (!string.IsNullOrEmpty(updateDto.UserName) && updateDto.UserName != user.UserName)
             {
@@ -168,9 +183,7 @@ namespace CarMaintenance.Core.Service.Services.Technicians
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
-                throw new ValidationException(
-                    "Failed to update technician",
-                    updateResult.Errors.Select(e => e.Description));
+                throw new ValidationException( "Failed to update technician",updateResult.Errors.Select(e => e.Description));
 
             _unitOfWork.GetRepo<Technician, string>().Update(technician);
             await _unitOfWork.SaveChangesAsync();

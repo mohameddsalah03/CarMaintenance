@@ -10,7 +10,6 @@ using CarMaintenance.Core.Service.Abstraction.Services.Payments;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
-using CarMaintenance.Core.Service.Services.Reviews;
 using CarMaintenance.Core.Service.Services.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +31,7 @@ namespace CarMaintenance.Core.Service.Services
         private readonly Lazy<INotificationService> _notificationService;
         private readonly Lazy<IAdminService> _adminService;
         private readonly Lazy<IPaymentService> _paymentService;
+        private readonly Lazy<IAiDiagnosisService> _aiDiagnosisService;
 
         public ServiceManager(
             IUnitOfWork unitOfWork,
@@ -43,7 +43,7 @@ namespace CarMaintenance.Core.Service.Services
             _mapper = mapper;
             _serviceProvider = serviceProvider;
 
-            _serviceService = new Lazy<IServiceService>(() =>new ServiceService(_unitOfWork, _mapper));
+            _serviceService = new Lazy<IServiceService>(() => _serviceProvider.GetRequiredService<IServiceService>());
 
             _vehicleService = new Lazy<IVehicleService>(() =>new VehicleService(_unitOfWork, _mapper));
 
@@ -55,12 +55,13 @@ namespace CarMaintenance.Core.Service.Services
 
             _aiTechnicianService = new Lazy<IAiTechnicianService>(() => _serviceProvider.GetRequiredService<IAiTechnicianService>());
             
-            _reviewService = new Lazy<IReviewService>(() =>new ReviewService(_unitOfWork, _mapper));
+            _reviewService = new Lazy<IReviewService>(() => _serviceProvider.GetRequiredService<IReviewService>());
 
             _notificationService = new Lazy<INotificationService>(() => _serviceProvider.GetRequiredService<INotificationService>());
             
             _adminService = new Lazy<IAdminService>(() => _serviceProvider.GetRequiredService<IAdminService>());
             _paymentService = new Lazy<IPaymentService>(() => _serviceProvider.GetRequiredService<IPaymentService>());
+            _aiDiagnosisService = new Lazy<IAiDiagnosisService>(() => _serviceProvider.GetRequiredService<IAiDiagnosisService>());
 
         }
 
@@ -77,5 +78,7 @@ namespace CarMaintenance.Core.Service.Services
         public IAdminService AdminService => _adminService.Value;
 
         public IPaymentService PaymentService => _paymentService.Value;
+
+        public IAiDiagnosisService AiDiagnosisService => _aiDiagnosisService.Value;
     }
 }

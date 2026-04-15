@@ -2,6 +2,8 @@
 {
     public class InvoiceDto
     {
+
+        public string InvoiceNumber { get; set; } = null!;
         // Book
         public string BookingNumber { get; set; } = null!;
         public DateTime ScheduledDate { get; set; }

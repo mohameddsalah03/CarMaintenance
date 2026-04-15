@@ -42,23 +42,35 @@ namespace CarMaintenance.Core.Service.Services.Payments
             if (booking.Status == BookingStatus.Cancelled)
                 throw new BadRequestException("لا يمكن دفع حجز ملغى");
 
-            // 2. Resolve integration ID by payment method
+            // A-07: Guard — Cash bookings cannot use the online payment gateway
+            if (booking.PaymentMethod == PaymentMethod.Cash)
+                throw new BadRequestException(
+                    "هذا الحجز مسجل بطريقة الدفع نقداً عند الاستلام. " +
+                    "لا يمكن استخدام الدفع الإلكتروني لهذا الحجز.");
+
+            // A-07: Guard — Payment is only valid after the service has been completed
+            if (booking.Status != BookingStatus.Completed)
+                throw new BadRequestException(
+                    "لا يمكن الدفع قبل اكتمال الخدمة. " +
+                    "يرجى انتظار إتمام أعمال الصيانة وتأكيد الفني لاكتمال العمل.");
+
+            // 2. Resolve integration ID by payment method from the DTO
             var integrationId = dto.PaymentMethod.ToLower() switch
             {
-                "card" => _paymobSettings.CardIntegrationId,
-                "vodafone_cash" => _paymobSettings.VodafoneIntegrationId,
+                "card"           => _paymobSettings.CardIntegrationId,
+                "vodafone_cash"  => _paymobSettings.VodafoneIntegrationId,
                 _ => throw new BadRequestException(
                     "طريقة دفع غير صحيحة. القيم المقبولة: card, vodafone_cash")
             };
 
-            var amountCents = (int)(booking.TotalCost * 100);
-            var email = booking.User?.Email ?? "noemail@fixora.com";
-            var phone = booking.User?.PhoneNumber ?? "01000000000";
+            var amountCents    = (int)(booking.TotalCost * 100);
+            var email          = booking.User?.Email        ?? "noemail@fixora.com";
+            var phone          = booking.User?.PhoneNumber  ?? "01000000000";
             var merchantOrderId = $"FIXORA-{booking.BookingNumber}";
 
             // 3. Paymob 3-step flow
-            var authToken = await _paymobService.GetAuthTokenAsync();
-            var orderId = await _paymobService.CreateOrderAsync(authToken, amountCents, merchantOrderId);
+            var authToken    = await _paymobService.GetAuthTokenAsync();
+            var orderId      = await _paymobService.CreateOrderAsync(authToken, amountCents, merchantOrderId);
             var paymentToken = await _paymobService.GetPaymentKeyAsync(
                 authToken, orderId, amountCents, integrationId, email, phone);
 
@@ -70,7 +82,7 @@ namespace CarMaintenance.Core.Service.Services.Payments
 
             return new PaymentInitiatedDto
             {
-                IFrameUrl = iFrameUrl,
+                IFrameUrl    = iFrameUrl,
                 PaymentToken = paymentToken
             };
         }
@@ -114,8 +126,8 @@ namespace CarMaintenance.Core.Service.Services.Payments
 
             // "FIXORA-BK-20260325-A3F9C2" → "BK-20260325-A3F9C2"
             var bookingNumber = merchantOrderId.Replace("FIXORA-", "");
-            var bookingSpec = new BookingByNumberSpecification(bookingNumber);
-            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(bookingSpec);
+            var bookingSpec   = new BookingByNumberSpecification(bookingNumber);
+            var booking       = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(bookingSpec);
 
             if (booking == null)
             {
@@ -136,17 +148,17 @@ namespace CarMaintenance.Core.Service.Services.Payments
             if (callback.Obj.Success && !callback.Obj.Pending)
             {
                 booking.PaymentStatus = PaymentStatus.Paid;
-                _logger.LogInformation("[Payment] ✅ Booking {BookingNumber} marked as Paid.", bookingNumber);
+                _logger.LogInformation("[Payment] Booking {BookingNumber} marked as Paid.", bookingNumber);
             }
             else if (!callback.Obj.Success && !callback.Obj.Pending)
             {
                 booking.PaymentStatus = PaymentStatus.Failed;
-                _logger.LogWarning("[Payment] ❌ Booking {BookingNumber} payment Failed.", bookingNumber);
+                _logger.LogWarning("[Payment] Booking {BookingNumber} payment Failed.", bookingNumber);
             }
             else
             {
                 _logger.LogInformation("[Payment] Booking {BookingNumber} payment still Pending.", bookingNumber);
-                return; // Don't update status for pending transactions
+                return;
             }
 
             _unitOfWork.GetRepo<Booking, int>().Update(booking);

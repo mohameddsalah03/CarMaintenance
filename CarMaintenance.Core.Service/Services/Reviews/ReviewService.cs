@@ -5,13 +5,18 @@ using CarMaintenance.Core.Domain.Models.Data.Enums;
 using CarMaintenance.Core.Domain.Specifications.Bookings;
 using CarMaintenance.Core.Domain.Specifications.Reviews;
 using CarMaintenance.Core.Domain.Specifications.Technicians;
+using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Shared.DTOs.Reviews;
 using CarMaintenance.Shared.Exceptions;
 
 namespace CarMaintenance.Core.Service.Services.Reviews
 {
-    internal class ReviewService(IUnitOfWork _unitOfWork , IMapper _mapper) : IReviewService
+    internal class ReviewService(
+        IUnitOfWork _unitOfWork ,
+        IMapper _mapper,
+        INotificationService _notificationService
+        ) : IReviewService
     {
 
         public async Task<IEnumerable<ReviewDto>> GetAllReviewsAsync()
@@ -60,6 +65,18 @@ namespace CarMaintenance.Core.Service.Services.Reviews
             await _unitOfWork.SaveChangesAsync();
 
             await UpdateTechnicianRatingAsync(booking.TechnicianId);
+            
+            // Notify the technician 
+            if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.AssignedTechnician.UserId,
+                    title: "تقييم جديد",
+                    message: $"قام العميل {booking.User.DisplayName} بتقييم حجزه رقم " +
+                               $"{booking.BookingNumber} — التقييم: {dto.TechnicianRating}/5.",
+                    type: NotificationType.NewReview,
+                    actionUrl: $"/technician/bookings/{booking.Id}");
+            }
 
             var reviewSpec = new ReviewSpecification(dto.BookingId);
             var created = await _unitOfWork.GetRepo<Review, int>().GetWithSpecAsync(reviewSpec);

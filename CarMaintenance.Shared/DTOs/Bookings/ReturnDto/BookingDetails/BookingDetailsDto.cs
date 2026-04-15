@@ -9,5 +9,8 @@ namespace CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails
         public TechnicianAvailableSlotsDto? TechnicianAvailableSlots { get; set; }
 
         public ReviewSummaryDto? Review { get; set; }
+
+        public int? CustomerTotalBookings { get; set; }
+
     }
 }

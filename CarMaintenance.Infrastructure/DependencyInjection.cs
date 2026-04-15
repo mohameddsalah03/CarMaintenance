@@ -16,7 +16,8 @@ namespace CarMaintenance.Infrastructure
 
             services.Configure<AISettings>(configuration.GetSection("AISettings"));
             services.AddHttpClient<IAiTechnicianService, AiTechnicianService>();
-            
+            services.AddHttpClient<IAiDiagnosisService, AiDiagnosisService>();
+
             services.Configure<PaymobSettings>(configuration.GetSection("PaymobSettings"));
             services.AddHttpClient<IPaymobService, PaymobService>();
 

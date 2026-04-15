@@ -30,8 +30,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
 
         [Authorize(Roles = "Customer")]
         [HttpGet("my-bookings")]
-        public async Task<ActionResult<Pagination<BookingDto>>> GetMyBookings(
-            [FromQuery] BookingSpecParams specParams)
+        public async Task<ActionResult<Pagination<BookingDto>>> GetMyBookings([FromQuery] BookingSpecParams specParams)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var bookings = await _serviceManager.BookingService.GetMyBookingsAsync(specParams, userId!);
@@ -47,6 +46,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
             return Ok(booking);
         }
 
+
         [Authorize(Roles = "Customer")]
         [HttpPatch("{id:int}/cancel")]
         public async Task<ActionResult> CancelBooking(int id)
@@ -58,16 +58,12 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
 
         [Authorize(Roles = "Customer")]
         [HttpPatch("additional-issues/{issueId:int}/approve")]
-        public async Task<ActionResult> ApproveAdditionalIssue(
-            int issueId, [FromBody] ApproveAdditionalIssueDto approveDto)
+        public async Task<ActionResult> ApproveAdditionalIssue(int issueId, [FromBody] ApproveAdditionalIssueDto approveDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             approveDto.IssueId = issueId;
             await _serviceManager.BookingService.ApproveAdditionalIssueAsync(approveDto, userId);
-
-            var message = approveDto.IsApproved
-                ? "تمت الموافقة على المشكلة الإضافية بنجاح"
-                : "تم رفض المشكلة الإضافية";
+            var message = approveDto.IsApproved? "تمت الموافقة على المشكلة الإضافية بنجاح": "تم رفض المشكلة الإضافية";
 
             return Ok(new { message });
         }
@@ -95,7 +91,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         public async Task<ActionResult<BookingDto>> AssignTechnician(int id)
             => Ok(await _serviceManager.BookingService.AssignTechnicianAsync(id));
 
-        // FIX #14: Admin cancel endpoint
+        
         [Authorize(Roles = "Admin")]
         [HttpPatch("{id:int}/admin-cancel")]
         public async Task<ActionResult> AdminCancelBooking(int id)
@@ -117,7 +113,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
             return Ok(bookings);
         }
 
-        //  Missing endpoint now added
+        
         [Authorize(Roles = "Technician")]
         [HttpGet("{id:int}/details")]
         public async Task<ActionResult<BookingDetailsDto>> GetBookingDetailsForTechnician(int id)
