@@ -1,14 +1,11 @@
 [
   {
-    "Title": "تسريب زيت بسيط",
-    "EstimatedCost": 200.00,
-    "IsApproved": true,
-    "BookingId": 2
-  },
-  {
-    "Title": "استبدال فلتر الهواء",
-    "EstimatedCost": 80.00,
-    "IsApproved": true,
-    "BookingId": 2
+    "title": "تآكل في فحمات الفرامل الأمامية",
+    "description": "تم اكتشاف تآكل شديد في الفحمات يحتاج استبدال فوري لضمان السلامة",
+    "estimatedCost": 200.0,
+    "estimatedDurationMinutes": 45,
+    "status": "Pending",
+    "createdAt": "2026-05-01T12:30:00Z",
+    "bookingId": 5
   }
 ]

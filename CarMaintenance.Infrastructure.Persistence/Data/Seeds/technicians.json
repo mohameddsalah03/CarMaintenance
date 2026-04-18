@@ -1,8 +1,106 @@
 [
   {
-    "specialization": "متخصص محركات",
+    "id": "tech-001",
+    "userId": "user-tech-001",
+    "specialization": "oil_change,maintenance,brakes,engine",
     "rating": 4.8,
     "isAvailable": true,
-    "userId": "9aa803f4-3c24-49a7-bffa-22e0a5d7c1bf"
+    "experienceYears": 8
+  },
+  {
+    "id": "tech-002",
+    "userId": "user-tech-002",
+    "specialization": "engine,transmission,oil_change,oil_leak",
+    "rating": 4.5,
+    "isAvailable": true,
+    "experienceYears": 5
+  },
+  {
+    "id": "tech-003",
+    "userId": "user-tech-003",
+    "specialization": "brakes,suspension,tires",
+    "rating": 4.2,
+    "isAvailable": true,
+    "experienceYears": 4
+  },
+  {
+    "id": "tech-004",
+    "userId": "user-tech-004",
+    "specialization": "maintenance,engine,cooling,oil_change",
+    "rating": 4.6,
+    "isAvailable": true,
+    "experienceYears": 6
+  },
+  {
+    "id": "tech-005",
+    "userId": "user-tech-005",
+    "specialization": "transmission,suspension,steering",
+    "rating": 4.0,
+    "isAvailable": true,
+    "experienceYears": 3
+  },
+  {
+    "id": "tech-006",
+    "userId": "user-tech-006",
+    "specialization": "tires,alignment_balancing,brakes,suspension",
+    "rating": 4.4,
+    "isAvailable": true,
+    "experienceYears": 5
+  },
+  {
+    "id": "tech-007",
+    "userId": "user-tech-007",
+    "specialization": "electrical,battery,starting",
+    "rating": 4.7,
+    "isAvailable": true,
+    "experienceYears": 7
+  },
+  {
+    "id": "tech-008",
+    "userId": "user-tech-008",
+    "specialization": "ac,cooling,electrical,exhaust",
+    "rating": 4.3,
+    "isAvailable": true,
+    "experienceYears": 4
+  },
+  {
+    "id": "tech-009",
+    "userId": "user-tech-009",
+    "specialization": "exhaust,engine,oil_leak,starting",
+    "rating": 4.1,
+    "isAvailable": true,
+    "experienceYears": 3
+  },
+  {
+    "id": "tech-010",
+    "userId": "user-tech-010",
+    "specialization": "oil_change,oil_leak,maintenance,cleaning",
+    "rating": 4.5,
+    "isAvailable": true,
+    "experienceYears": 6
+  },
+  {
+    "id": "tech-011",
+    "userId": "user-tech-011",
+    "specialization": "steering,alignment_balancing,suspension,tires",
+    "rating": 4.3,
+    "isAvailable": true,
+    "experienceYears": 5
+  },
+  {
+    "id": "tech-012",
+    "userId": "user-tech-012",
+    "specialization": "cleaning,maintenance,battery",
+    "rating": 3.9,
+    "isAvailable": true,
+    "experienceYears": 2
+  },
+  {
+    "id": "tech-013",
+    "userId": "user-tech-013",
+    "specialization": "battery,starting,electrical,ac",
+    "rating": 4.2,
+    "isAvailable": true,
+    "experienceYears": 4
   }
 ]

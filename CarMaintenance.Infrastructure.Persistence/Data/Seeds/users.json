@@ -1,0 +1,164 @@
+[
+  {
+    "id": "admin-fixora-001",
+    "displayName": "مدير النظام",
+    "userName": "admin_fixora",
+    "email": "admin@fixora.com",
+    "phoneNumber": "01000000001",
+    "password": "Admin@Fixora2026!",
+    "role": "Admin"
+  },
+  {
+    "id": "cust-001",
+    "displayName": "سارة أحمد",
+    "userName": "sara_ahmed_01",
+    "email": "sara@example.com",
+    "phoneNumber": "01112345678",
+    "password": "Customer@2026!",
+    "role": "Customer"
+  },
+  {
+    "id": "cust-002",
+    "displayName": "محمد عبدالله",
+    "userName": "mohamed_abdo_02",
+    "email": "mohamed.abdo@example.com",
+    "phoneNumber": "01223456789",
+    "password": "Customer@2026!",
+    "role": "Customer"
+  },
+  {
+    "id": "cust-003",
+    "displayName": "ياسمين خالد",
+    "userName": "yasmin_khaled_03",
+    "email": "yasmin@example.com",
+    "phoneNumber": "01534567890",
+    "password": "Customer@2026!",
+    "role": "Customer"
+  },
+  {
+    "id": "cust-004",
+    "displayName": "أحمد سمير",
+    "userName": "ahmed_samir_04",
+    "email": "ahmed.samir@example.com",
+    "phoneNumber": "01645678901",
+    "password": "Customer@2026!",
+    "role": "Customer"
+  },
+  {
+    "id": "user-tech-001",
+    "displayName": "Ahmed Mohamed",
+    "userName": "ahmed_tech_001",
+    "email": "ahmed.tech@fixora.com",
+    "phoneNumber": "01001234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-002",
+    "displayName": "Mohamed Ali",
+    "userName": "mohamed_tech_002",
+    "email": "mohamed.tech@fixora.com",
+    "phoneNumber": "01101234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-003",
+    "displayName": "Ali Hassan",
+    "userName": "ali_tech_003",
+    "email": "ali.tech@fixora.com",
+    "phoneNumber": "01201234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-004",
+    "displayName": "Khaled Omar",
+    "userName": "khaled_tech_004",
+    "email": "khaled.tech@fixora.com",
+    "phoneNumber": "01501234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-005",
+    "displayName": "Omar Salem",
+    "userName": "omar_tech_005",
+    "email": "omar.tech@fixora.com",
+    "phoneNumber": "01551234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-006",
+    "displayName": "Youssef Ahmed",
+    "userName": "youssef_tech_006",
+    "email": "youssef.tech@fixora.com",
+    "phoneNumber": "01061234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-007",
+    "displayName": "Hassan Ibrahim",
+    "userName": "hassan_tech_007",
+    "email": "hassan.tech@fixora.com",
+    "phoneNumber": "01071234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-008",
+    "displayName": "Mahmoud Karim",
+    "userName": "mahmoud_tech_008",
+    "email": "mahmoud.tech@fixora.com",
+    "phoneNumber": "01081234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-009",
+    "displayName": "Tarek Adel",
+    "userName": "tarek_tech_009",
+    "email": "tarek.tech@fixora.com",
+    "phoneNumber": "01091234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-010",
+    "displayName": "Amr Sayed",
+    "userName": "amr_tech_010",
+    "email": "amr.tech@fixora.com",
+    "phoneNumber": "01211234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-011",
+    "displayName": "Walid Nasser",
+    "userName": "walid_tech_011",
+    "email": "walid.tech@fixora.com",
+    "phoneNumber": "01221234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-012",
+    "displayName": "Rami Fawzy",
+    "userName": "rami_tech_012",
+    "email": "rami.tech@fixora.com",
+    "phoneNumber": "01231234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  },
+  {
+    "id": "user-tech-013",
+    "displayName": "Hossam Emad",
+    "userName": "hossam_tech_013",
+    "email": "hossam.tech@fixora.com",
+    "phoneNumber": "01241234567",
+    "password": "Tech@Fixora2026!",
+    "role": "Technician"
+  }
+]
