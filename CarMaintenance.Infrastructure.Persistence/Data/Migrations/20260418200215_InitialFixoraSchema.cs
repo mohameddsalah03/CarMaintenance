@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class initCreate : Migration
+    public partial class InitialFixoraSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,8 +33,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     BasePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    EstimatedDurationMinutes = table.Column<int>(type: "int", nullable: false)
+                    EstimatedDurationMinutes = table.Column<int>(type: "int", nullable: false),
+                    IncludedItems = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ExcludedItems = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Requirements = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -46,8 +50,8 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    RefreshToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     RefreshTokenExpiryTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -79,6 +83,8 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    ActionUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false)
                 },
                 constraints: table =>
@@ -100,6 +106,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     Specialization = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false, defaultValue: 0m),
                     IsAvailable = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    ExperienceYears = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
@@ -147,6 +154,7 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     Brand = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Year = table.Column<int>(type: "int", nullable: false),
                     PlateNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    LastMaintenanceDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false)
                 },
                 constraints: table =>
@@ -168,11 +176,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     BookingNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     ScheduledDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     TotalCost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    PaymentStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    PaymentStatus = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    TechnicianReport = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     VehicleId = table.Column<int>(type: "int", nullable: false),
                     TechnicianId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
@@ -207,8 +216,11 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     EstimatedCost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    IsApproved = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    EstimatedDurationMinutes = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    Status = table.Column<string>(type: "nvarchar(20)", nullable: false, defaultValue: "Pending"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     BookingId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -226,14 +238,16 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                 name: "BookingServices",
                 columns: table => new
                 {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     BookingId = table.Column<int>(type: "int", nullable: false),
                     ServiceId = table.Column<int>(type: "int", nullable: false),
                     Duration = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    Status = table.Column<string>(type: "nvarchar(50)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BookingServices", x => new { x.BookingId, x.ServiceId });
+                    table.PrimaryKey("PK_BookingServices", x => x.Id);
                     table.ForeignKey(
                         name: "FK_BookingServices_Bookings_BookingId",
                         column: x => x.BookingId,
@@ -254,7 +268,8 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false),
+                    ServiceRating = table.Column<int>(type: "int", nullable: false),
+                    TechnicianRating = table.Column<int>(type: "int", nullable: false),
                     Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
@@ -309,6 +324,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                 name: "IX_Bookings_VehicleId",
                 table: "Bookings",
                 column: "VehicleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingServices_BookingId_ServiceId",
+                table: "BookingServices",
+                columns: new[] { "BookingId", "ServiceId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_BookingServices_ServiceId",

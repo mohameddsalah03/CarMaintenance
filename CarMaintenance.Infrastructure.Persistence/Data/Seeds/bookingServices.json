@@ -1,8 +1,44 @@
 [
   {
-    "BookingId": 2,
-    "ServiceId": 1,
-    "Duration": 30,
-    "Status": 0
+    "id": 1,
+    "bookingId": 1,
+    "serviceId": 1,
+    "duration": 30,
+    "status": "Completed"
+  },
+  {
+    "id": 2,
+    "bookingId": 2,
+    "serviceId": 3,
+    "duration": 120,
+    "status": "Completed"
+  },
+  {
+    "id": 3,
+    "bookingId": 3,
+    "serviceId": 9,
+    "duration": 90,
+    "status": "Completed"
+  },
+  {
+    "id": 4,
+    "bookingId": 4,
+    "serviceId": 5,
+    "duration": 60,
+    "status": "InProgress"
+  },
+  {
+    "id": 5,
+    "bookingId": 5,
+    "serviceId": 15,
+    "duration": 30,
+    "status": "InProgress"
+  },
+  {
+    "id": 6,
+    "bookingId": 6,
+    "serviceId": 11,
+    "duration": 60,
+    "status": "Pending"
   }
 ]

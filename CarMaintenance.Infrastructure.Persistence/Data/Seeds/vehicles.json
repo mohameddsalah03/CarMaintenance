@@ -1,16 +1,42 @@
 [
   {
-    "Model": "كامري",
-    "Brand": "تويوتا",
-    "Year": 2022,
-    "PlateNumber": "س م أ 1234",
-    "UserId": "fd767dae-db14-48d6-8fc9-2d690fb441dc"
+    "id": 1,
+    "brand": "تويوتا",
+    "model": "كامري",
+    "year": 2022,
+    "plateNumber": "أ ب ج 1234",
+    "userId": "cust-001"
   },
   {
-    "Model": "أكورد",
-    "Brand": "هوندا",
-    "Year": 2021,
-    "PlateNumber": "ب ن د 5678",
-    "UserId": "fd767dae-db14-48d6-8fc9-2d690fb441dc"
+    "id": 2,
+    "brand": "هيونداي",
+    "model": "إيلانترا",
+    "year": 2021,
+    "plateNumber": "د ه و 5678",
+    "userId": "cust-001"
+  },
+  {
+    "id": 3,
+    "brand": "كيا",
+    "model": "سيراتو",
+    "year": 2023,
+    "plateNumber": "ز ح ط 9012",
+    "userId": "cust-002"
+  },
+  {
+    "id": 4,
+    "brand": "نيسان",
+    "model": "صني",
+    "year": 2020,
+    "plateNumber": "ي ك ل 3456",
+    "userId": "cust-003"
+  },
+  {
+    "id": 5,
+    "brand": "شيفروليه",
+    "model": "أوبترا",
+    "year": 2019,
+    "plateNumber": "م ن س 7890",
+    "userId": "cust-004"
   }
 ]
