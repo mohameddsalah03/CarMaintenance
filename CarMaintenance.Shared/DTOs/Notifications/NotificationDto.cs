@@ -1,6 +1,6 @@
 ﻿namespace CarMaintenance.Shared.DTOs.Notifications
 {
-    public class NotificationDto // returned to the frontend
+    public class NotificationDto 
     {
         public int Id { get; set; }
         public string Title { get; set; } = null!;

@@ -10,11 +10,9 @@
         public int PageSize
         {
             get => _pageSize;
-            // Prevent frontend from requesting too many records at once
             set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
         }
 
-        // Optional filter: only unread
         public bool? IsRead { get; set; }
     }
 }

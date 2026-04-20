@@ -14,6 +14,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
                 .HasMaxLength(200)
                 .IsRequired();
 
+            builder.HasIndex(u => u.PhoneNumber)
+                .IsUnique()
+                .HasFilter("[PhoneNumber] IS NOT NULL");
+
             builder.Property(u => u.RefreshToken)
                 .HasMaxLength(500);
 

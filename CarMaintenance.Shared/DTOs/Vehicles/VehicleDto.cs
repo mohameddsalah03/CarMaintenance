@@ -12,6 +12,6 @@
         // Foreign Key
         public string UserId { get; set; } = null!;
 
-        public string OwnerName { get; set; } = null!; // user.DisplayName
+        public string OwnerName { get; set; } = null!;
     }
 }

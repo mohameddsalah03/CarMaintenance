@@ -1,6 +1,6 @@
 ﻿namespace CarMaintenance.Shared.DTOs.Notifications
 {
-    public class RealTimeNotificationDto //Used when sending real-time notification via SignalR
+    public class RealTimeNotificationDto
     {
         public int Id { get; set; }
         public string Title { get; set; } = null!;

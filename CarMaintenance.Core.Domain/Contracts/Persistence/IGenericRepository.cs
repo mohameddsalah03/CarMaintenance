@@ -19,7 +19,6 @@ namespace CarMaintenance.Core.Domain.Contracts.Persistence
 
 
         // For Sum in Admin Service
-        // SQL-level aggregation — avoids loading all rows to memory for Sum
         Task<decimal> GetSumAsync(ISpecifications<TEntity, TKey> spec,Expression<Func<TEntity, decimal>> selector);
     }
 }

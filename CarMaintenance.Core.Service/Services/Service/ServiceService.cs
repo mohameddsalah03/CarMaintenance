@@ -111,14 +111,12 @@ namespace CarMaintenance.Core.Service
 
         public async Task<AnalyzeProblemResponseDto> AnalyzeProblemAsync(AnalyzeProblemRequestDto requestDto, string? userId)
         {
-            // 1. prepare ai request for aiDiagnosisService
             var aiRequest = new AiDiagnosisRequestDto
             {
                 ProblemDescription = requestDto.ProblemDescription,
                 VehicleContext = await BuildVehicleContextAsync(requestDto.VehicleId, userId)
             };
 
-            // 2. Call AI 
             var aiResult = await _aiDiagnosisService.AnalyzeProblemAsync(aiRequest);
             
 
@@ -131,7 +129,6 @@ namespace CarMaintenance.Core.Service
                 };
             }
 
-            // 4. AI returned "unknown" — no services to validate
             if (aiResult.Status == "unknown" || !aiResult.RecommendedServices.Any())
             {
                 return new AnalyzeProblemResponseDto
@@ -141,7 +138,6 @@ namespace CarMaintenance.Core.Service
                 };
             }
 
-            // 5. Validate every ServiceId the AI returned against our SQL Services table.
             var validatedSuggestions = await ValidateAndEnrichServiceIdsAsync(aiResult.RecommendedServices);
 
             if (!validatedSuggestions.Any())
@@ -191,7 +187,6 @@ namespace CarMaintenance.Core.Service
             return validated;
         }
 
-       
         private async Task<AiVehicleContextDto?> BuildVehicleContextAsync(int? vehicleId, string? userId)
         {
             if (vehicleId is null || string.IsNullOrEmpty(userId))

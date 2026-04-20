@@ -17,8 +17,6 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
 
         // Get Service Details with Technicians
         Task<ServiceDetailsDto?> GetServiceDetailsAsync(int id);
-
-        // AI-powered pre-booking analysis
         Task<AnalyzeProblemResponseDto> AnalyzeProblemAsync(AnalyzeProblemRequestDto requestDto, string? userId);
     }
 }

@@ -5,7 +5,6 @@ using CarMaintenance.Shared.DTOs.Payment.Order;
 using CarMaintenance.Shared.DTOs.Payment.PaymentKey;
 using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,9 +14,8 @@ namespace CarMaintenance.Infrastructure.PaymobServices
 {
     public class PaymobService(
         HttpClient _httpClient,
-        IOptions<PaymobSettings> _options,
-        ILogger<PaymobService> _logger
-    ) : IPaymobService
+        IOptions<PaymobSettings> _options    
+        ) : IPaymobService
     {
         private readonly PaymobSettings _settings = _options.Value;
         private const string BaseUrl = "https://accept.paymob.com/api";
@@ -30,35 +28,22 @@ namespace CarMaintenance.Infrastructure.PaymobServices
             if (string.IsNullOrEmpty(response?.Token))
                 throw new BadRequestException("Paymob: فشل الحصول على Auth Token");
 
-            _logger.LogInformation("[Paymob] Auth Token ✅");
             return response.Token;
         }
 
-        // 🔹 MODIFIED - استقبل merchantOrderId وابعته لـ Paymob
-        public async Task<int> CreateOrderAsync(
-            string authToken,
-            int amountCents,
-            string merchantOrderId)
+        public async Task<int> CreateOrderAsync( string authToken,int amountCents,string merchantOrderId)
         {
             var body = new PaymobOrderRequest
             {
                 AuthToken = authToken,
                 AmountCents = amountCents,
-                // 🔹 هذا يربط الـ Order بالـ Booking
-                // لما يييجي الـ Callback: MerchantOrderId = "FIXORA-BK-20260325-A3F9C2"
                 MerchantOrderId = merchantOrderId
             };
 
-            var response = await PostAsync<PaymobOrderResponse>(
-                "/ecommerce/orders", body);
+            var response = await PostAsync<PaymobOrderResponse>( "/ecommerce/orders", body);
 
             if (response == null || response.Id == 0)
                 throw new BadRequestException("Paymob: فشل إنشاء الطلب");
-
-            _logger.LogInformation(
-                "[Paymob] Order Created. ID: {Id}, MerchantOrderId: {Mid}",
-                response.Id, merchantOrderId);
-
             return response.Id;
         }
 
@@ -89,14 +74,13 @@ namespace CarMaintenance.Infrastructure.PaymobServices
             if (string.IsNullOrEmpty(response?.Token))
                 throw new BadRequestException("Paymob: فشل الحصول على Payment Key");
 
-            _logger.LogInformation("[Paymob] Payment Key ✅");
             return response.Token;
         }
 
         public string BuildIFrameUrl(string paymentToken)
         {
-            return $"https://accept.paymob.com/api/acceptance/iframes/" +
-                   $"{_settings.IFrameId}?payment_token={paymentToken}";
+            return $"https://accept.paymob.com/api/acceptance/iframes/" + 
+                $"{_settings.IFrameId}?payment_token={paymentToken}";
         }
 
         public bool VerifyHmac(PaymobTransactionObj obj, string receivedHmac)
@@ -105,7 +89,6 @@ namespace CarMaintenance.Infrastructure.PaymobServices
 
             try
             {
-                // الترتيب ده ثابت من Paymob Documentation
                 var data = string.Concat(
                     obj.AmountCents,
                     obj.CreatedAt,
@@ -136,14 +119,10 @@ namespace CarMaintenance.Infrastructure.PaymobServices
                 var computed = Convert.ToHexString(hash).ToLower();
                 var isValid = computed == receivedHmac.ToLower();
 
-                if (!isValid)
-                    _logger.LogWarning("[Paymob] HMAC Mismatch! Possible fake callback.");
-
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[Paymob] HMAC verification failed");
                 return false;
             }
         }
@@ -161,13 +140,10 @@ namespace CarMaintenance.Infrastructure.PaymobServices
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("[Paymob] Error {Status}: {Body}",
-                    response.StatusCode, responseBody);
                 throw new BadRequestException($"Paymob API Error: {response.StatusCode}");
             }
 
-            return JsonSerializer.Deserialize<T>(responseBody,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return JsonSerializer.Deserialize<T>(responseBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
     }
 }

@@ -9,10 +9,7 @@ namespace CarMaintenance.Core.Domain.Models.Data
         public string Message { get; set; } = null!;
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; }
-
         public NotificationType Type { get; set; }
-
-        // URL the frontend navigates to when clicking the notification
         public string? ActionUrl { get; set; }
 
         // Foreign Key

@@ -19,8 +19,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Repos
                 query = query.Where(spec.Criteria);
 
             //  Step 2 — Apply Includes BEFORE OrderBy and Pagination.
-            // EF Core translates this to proper JOINs in the main query,
-            // avoiding the "split query" warning and ensuring correct pagination.
             query = spec.Includes.Aggregate(query, (currentQuery, includeExpression) =>
                 currentQuery.Include(includeExpression));
 

@@ -12,59 +12,82 @@ namespace CarMaintenance.APIs.Extensions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services,IConfiguration configuration)
         {
-            services.Configure<JwtSettings>(configuration.GetSection("jwtSettings"));
+            services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
-            services.AddIdentity<ApplicationUser, IdentityRole>(identityOptions =>
+            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
-                identityOptions.User.RequireUniqueEmail = true;
-                identityOptions.Password.RequireNonAlphanumeric = true;
-                identityOptions.Password.RequiredUniqueChars = 1;
-                identityOptions.Password.RequiredLength = 6;
-                identityOptions.Password.RequireUppercase = true;
-                identityOptions.Password.RequireLowercase = true;
-                identityOptions.Password.RequireDigit = true;
-                identityOptions.User.AllowedUserNameCharacters = null!;
-                identityOptions.Lockout.MaxFailedAccessAttempts = 5;
-                identityOptions.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                options.User.RequireUniqueEmail = true;
+                options.User.AllowedUserNameCharacters = null!;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredUniqueChars = 1;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireDigit = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             })
             .AddEntityFrameworkStores<CarDbContext>()
             .AddDefaultTokenProviders();
 
-            services.AddAuthentication(authOptions =>
+            
+            services.ConfigureApplicationCookie(options =>
             {
-                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                };
+            });
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(jwtOptions =>
+            .AddJwtBearer(options =>
             {
-                jwtOptions.TokenValidationParameters = new TokenValidationParameters
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateAudience = true,
                     ValidateIssuer = true,
                     ValidateIssuerSigningKey = true,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
-                    ValidIssuer = configuration["jwtSettings:Issuer"],
-                    ValidAudience = configuration["jwtSettings:Audience"],
+                    ValidIssuer = configuration["JwtSettings:Issuer"],
+                    ValidAudience = configuration["JwtSettings:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(configuration["jwtSettings:Key"]!))
+                        Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"]!))
                 };
 
-                jwtOptions.Events = new JwtBearerEvents
+                options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
-                        var authHeader = context.Request.Headers["Authorization"].ToString();
-                        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
-                            context.Token = authHeader["Bearer ".Length..].Trim();
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
                         return Task.CompletedTask;
                     }
                 };
             })
-            .AddGoogle(googleOptions =>
+            .AddGoogle(options =>
             {
-                googleOptions.ClientId = configuration["Authentication:Google:ClientId"]!;
-                googleOptions.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
+                options.ClientId = configuration["Authentication:Google:ClientId"]!;
+                options.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
             });
 
             return services;

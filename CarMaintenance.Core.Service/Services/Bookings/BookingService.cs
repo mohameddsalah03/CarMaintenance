@@ -24,8 +24,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         IUnitOfWork _unitOfWork,
         IMapper _mapper,
         IAiTechnicianService _aiTechnicianService,
-        INotificationService _notificationService,
-        ILogger<BookingService> _logger              // Proper logger injection
+        INotificationService _notificationService           
     ) : IBookingService
     {
         #region Customer
@@ -64,9 +63,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         public async Task<BookingDto> CreateBookingAsync( CreateBookingDto createBookingDto, string userId)
         {
-            // 1. Validate vehicle ownership
-            var vehicle = await _unitOfWork.GetRepo<Vehicle, int>()
-                .GetByIdAsync(createBookingDto.VehicleId);
+            var vehicle = await _unitOfWork.GetRepo<Vehicle, int>() .GetByIdAsync(createBookingDto.VehicleId);
 
             if (vehicle == null || vehicle.UserId != userId)
                 throw new BadRequestException("السيارة غير موجودة أو لا تخصك");
@@ -79,13 +76,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var requestedServiceIds = createBookingDto.Services.Select(s => s.ServiceId).ToList();
 
             if (requestedServiceIds.Count != requestedServiceIds.Distinct().Count())
-                throw new BadRequestException(
-                    "لا يمكن إضافة نفس الخدمة أكثر من مرة في نفس الحجز.");
+                throw new BadRequestException( "لا يمكن إضافة نفس الخدمة أكثر من مرة في نفس الحجز.");
 
             // 4. Validate no active booking for this vehicle
             var activeBookingSpec = new BookingByVehicleActiveSpecification(createBookingDto.VehicleId);
-            var activeBookings = await _unitOfWork.GetRepo<Booking, int>()
-                .GetAllWithSpecAsync(activeBookingSpec);
+            var activeBookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(activeBookingSpec);
 
             if (activeBookings.Any())
             {
@@ -101,8 +96,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var services = new List<Domain.Models.Data.Service>();
             foreach (var serviceId in requestedServiceIds)
             {
-                var service = await _unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                    .GetByIdAsync(serviceId);
+                var service = await _unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(serviceId);
                 if (service is null)
                     throw new BadRequestException($"الخدمة برقم {serviceId} غير موجودة");
 
@@ -113,9 +107,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             decimal totalCost = services.Sum(s => s.BasePrice);
 
             if (!Enum.TryParse<PaymentMethod>(createBookingDto.PaymentMethod, true, out var paymentMethod))
-                throw new BadRequestException(
-                    $"طريقة دفع غير صحيحة: '{createBookingDto.PaymentMethod}'. " +
-                    "القيم المقبولة: Cash, CreditCard");
+                throw new BadRequestException($"طريقة دفع غير صحيحة: '{createBookingDto.PaymentMethod}'. " +"القيم المقبولة: Cash, CreditCard");
 
             // 7. Create booking
             var bookingNumber = GenerateBookingNumber();
@@ -146,8 +138,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     Duration = serviceDto.Duration,
                     Status = BookingStatus.Pending
                 };
-                await _unitOfWork.GetRepo<Domain.Models.Data.BookingService, int>()
-                    .AddAsync(bookingService);
+                await _unitOfWork.GetRepo<Domain.Models.Data.BookingService, int>().AddAsync(bookingService);
             }
             await _unitOfWork.SaveChangesAsync();
 
@@ -236,9 +227,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 throw new BadRequestException("تمت معالجة هذه المشكلة بالفعل.");
 
             //  Set enum status instead of bool
-            issue.Status = approveAdditionalIssue.IsApproved
-                ? AdditionalIssueStatus.Approved
-                : AdditionalIssueStatus.Rejected;
+            issue.Status = approveAdditionalIssue.IsApproved? AdditionalIssueStatus.Approved: AdditionalIssueStatus.Rejected;
 
             _unitOfWork.GetRepo<AdditionalIssue, int>().Update(issue);
 
@@ -282,9 +271,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 throw new BadRequestException("الفاتورة غير متاحة - الحجز ملغى");
 
             decimal servicesCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0);
-            decimal additionalCost = booking.AdditionalIssues
-                .Where(ai => ai.IsApproved) // Uses computed property — still works
-                .Sum(ai => ai.EstimatedCost);
+            decimal additionalCost = booking.AdditionalIssues.Where(ai => ai.IsApproved)
+                                                             .Sum(ai => ai.EstimatedCost);
 
             return new InvoiceDto
             {
@@ -335,7 +323,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             { Data = data };
         }
 
-        //  This method now has a matching endpoint in the controller
         public async Task<BookingDetailsDto> GetBookingDetailsForTechnicianAsync(int id, string userId)
         {
             var techSpec = new TechnicianSpecification(userId, byUserId: true);
@@ -379,9 +366,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     $"حالة الحجز الحالية: '{booking.Status}'. " +
                     "يجب أن يكون الحجز في حالة InProgress.");
 
-            //  Correct pending check — uses AdditionalIssueStatus.Pending
-            var hasPendingIssue = booking.AdditionalIssues
-                .Any(ai => ai.Status == AdditionalIssueStatus.Pending);
+            var hasPendingIssue = booking.AdditionalIssues.Any(ai => ai.Status == AdditionalIssueStatus.Pending);
 
             if (hasPendingIssue)
                 throw new BadRequestException(
@@ -449,8 +434,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             if (newStatus == BookingStatus.Completed)
             {
-                var hasPendingIssues = booking.AdditionalIssues
-                    .Any(ai => ai.Status == AdditionalIssueStatus.Pending);
+                var hasPendingIssues = booking.AdditionalIssues.Any(ai => ai.Status == AdditionalIssueStatus.Pending);
 
                 if (hasPendingIssues)
                     throw new BadRequestException("لا يمكن إكمال الحجز — يوجد مشكلة إضافية لم يبت فيها العميل بعد. " +"يرجى انتظار رد العميل على المشكلة الإضافية قبل إكمال العمل.");
@@ -581,8 +565,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (aiResult?.RecommendedTechnicianId != null)
             {
                 var techSpec = new TechnicianSpecification(aiResult.RecommendedTechnicianId);
-                var technician = await _unitOfWork.GetRepo<Technician, string>()
-                    .GetWithSpecAsync(techSpec);
+                var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
                 if (technician != null && technician.IsAvailable)
                     technicianId = technician.Id;
             }
@@ -607,7 +590,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return _mapper.Map<BookingDto>(updatedBooking!);
         }
 
-        //  Admin can cancel any booking
         public async Task CancelBookingByAdminAsync(int id)
         {
             var spec = new BookingSpecification(id);
@@ -656,8 +638,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         #endregion
 
         #region Private Helpers
-        private async Task TryRestoreTechnicianAvailabilityAsync(
-            string technicianId, int excludeBookingId)
+        private async Task TryRestoreTechnicianAvailabilityAsync(string technicianId, int excludeBookingId)
         {
             var hasOtherActive = await HasOtherActiveBookingsAsync(technicianId, excludeBookingId);
             if (!hasOtherActive)
@@ -700,8 +681,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 if (aiResult?.RecommendedTechnicianId != null)
                 {
                     var techSpec = new TechnicianSpecification(aiResult.RecommendedTechnicianId);
-                    var technician = await _unitOfWork.GetRepo<Technician, string>()
-                        .GetWithSpecAsync(techSpec);
+                    var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
                     if (technician != null && technician.IsAvailable)
                         technicianId = technician.Id;
                 }
@@ -709,8 +689,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 if (technicianId == null)
                 {
                     var availableSpec = new TechnicianSpecification(isAvailable: true);
-                    var available = await _unitOfWork.GetRepo<Technician, string>()
-                        .GetAllWithSpecAsync(availableSpec);
+                    var available = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(availableSpec);
                     technicianId = available.OrderByDescending(t => t.Rating).FirstOrDefault()?.Id;
                 }
 
@@ -721,8 +700,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     await _unitOfWork.SaveChangesAsync();
 
                     var techSpec = new TechnicianSpecification(technicianId);
-                    var assignedTechnician = await _unitOfWork.GetRepo<Technician, string>()
-                        .GetWithSpecAsync(techSpec);
+                    var assignedTechnician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
 
                     if (assignedTechnician != null)
                     {
@@ -738,11 +716,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             }
             catch (Exception ex)
             {
-                // FIX #7: Proper structured logging instead of Console.WriteLine
-                _logger.LogWarning(ex,
-                    "[AI Assignment] Failed to auto-assign technician for Booking {BookingId} ({BookingNumber}). " +
-                    "Booking created without technician — manual assignment required.",
-                    booking.Id, booking.BookingNumber);
+                
             }
         }
 
@@ -762,8 +736,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 return new TechnicianAvailableSlotsDto { TechnicianId = technicianId };
 
             var bookingSpec = new BookingByTechnicianActiveSpecification(technicianId);
-            var activeBookings = (await _unitOfWork.GetRepo<Booking, int>()
-                .GetAllWithSpecAsync(bookingSpec)).ToList();
+            var activeBookings = (await _unitOfWork.GetRepo<Booking, int>() .GetAllWithSpecAsync(bookingSpec)).ToList();
 
             var bookedDates = activeBookings.Select(b => b.ScheduledDate).ToList();
             var workingHours = new[] { 9, 11, 13, 15, 17 };

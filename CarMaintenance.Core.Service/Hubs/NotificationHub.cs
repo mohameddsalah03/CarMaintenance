@@ -12,7 +12,7 @@ namespace CarMaintenance.Core.Service.Hubs
             var userId = Context.UserIdentifier;
             var userName = Context.User?.Identity?.Name ?? "Unknown";
 
-            Console.WriteLine($"[SignalR] User connected: {userName} (ID: {userId}), " + $"ConnectionId: {Context.ConnectionId}");
+            Console.WriteLine($" User connected: {userName} (ID: {userId}), " + $"ConnectionId: {Context.ConnectionId}");
 
             await base.OnConnectedAsync();
         }
@@ -22,7 +22,7 @@ namespace CarMaintenance.Core.Service.Hubs
         {
             var userId = Context.UserIdentifier;
             Console.WriteLine(
-                $"[SignalR] User disconnected: {userId}, " +
+                $" User disconnected: {userId}, " +
                 $"ConnectionId: {Context.ConnectionId}");
 
             await base.OnDisconnectedAsync(exception);

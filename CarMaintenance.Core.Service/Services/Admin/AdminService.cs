@@ -35,18 +35,15 @@ namespace CarMaintenance.Core.Service.Services.Admin
             var cancelledCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(new BookingStatsSpecification(BookingStatus.Cancelled));
 
             // Technicians
-            var totalTechs = await _unitOfWork.GetRepo<Technician, string>()
-                .GetCountAsync(new TechnicianSpecification());
-            var availableTechs = await _unitOfWork.GetRepo<Technician, string>()
-                .GetCountAsync(new TechnicianSpecification(isAvailable: true));
+            var totalTechs = await _unitOfWork.GetRepo<Technician, string>() .GetCountAsync(new TechnicianSpecification());
+            var availableTechs = await _unitOfWork.GetRepo<Technician, string>().GetCountAsync(new TechnicianSpecification(isAvailable: true));
 
             // Customers
             var customers = await _userManager.GetUsersInRoleAsync("Customer");
 
             var totalRevenue = await _unitOfWork.GetRepo<Booking, int>().GetSumAsync(BookingStatsSpecification.ForRevenue(), b => b.TotalCost);
 
-            var todayRevenue = await _unitOfWork.GetRepo<Booking, int>()
-                .GetSumAsync(BookingStatsSpecification.ForTodayRevenue(today), b => b.TotalCost);
+            var todayRevenue = await _unitOfWork.GetRepo<Booking, int>() .GetSumAsync(BookingStatsSpecification.ForTodayRevenue(today), b => b.TotalCost);
 
             var totalReviews = await _unitOfWork.GetRepo<Review, int>().GetCountAsync(new ReviewSpecification());
 
