@@ -44,24 +44,21 @@ namespace CarMaintenance.Core.Service.Services.Technicians
         public async Task<IEnumerable<TechniciansDto>> GetAllTechniciansAsync()
         {
             var spec = new TechnicianSpecification();
-            var technicians = await _unitOfWork.GetRepo<Technician, string>()
-                .GetAllWithSpecAsync(spec);
+            var technicians = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(spec);
             return _mapper.Map<IEnumerable<TechniciansDto>>(technicians);
         }
 
         public async Task<IEnumerable<TechniciansDto>> GetAvailableTechniciansAsync()
         {
             var spec = new TechnicianSpecification(isAvailable: true);
-            var technicians = await _unitOfWork.GetRepo<Technician, string>()
-                .GetAllWithSpecAsync(spec);
+            var technicians = await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(spec);
             return _mapper.Map<IEnumerable<TechniciansDto>>(technicians);
         }
 
         public async Task<TechniciansDto?> GetTechnicianByIdAsync(string id)
         {
             var spec = new TechnicianSpecification(id);
-            var technician = await _unitOfWork.GetRepo<Technician, string>()
-                .GetWithSpecAsync(spec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>() .GetWithSpecAsync(spec);
 
             if (technician is null)
                 throw new NotFoundException(nameof(Technician), id);
@@ -192,23 +189,17 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             var updated = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(updatedSpec);
             return _mapper.Map<TechniciansDto>(updated!);
         }
-
-        //  Check for active bookings before deleting
         public async Task DeleteTechnicianAsync(string id)
         {
             var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(id);
             if (technician is null)
                 throw new NotFoundException(nameof(Technician), id);
 
-            // Block deletion if technician has active/in-progress bookings
             var activeBookingSpec = new BookingByTechnicianActiveSpecification(id);
-            var activeCount = await _unitOfWork.GetRepo<Booking, int>()
-                .GetCountAsync(activeBookingSpec);
+            var activeCount = await _unitOfWork.GetRepo<Booking, int>().GetCountAsync(activeBookingSpec);
 
             if (activeCount > 0)
-                throw new BadRequestException(
-                    $"لا يمكن حذف الفني — لديه {activeCount} حجز نشط حالياً. " +
-                    "يرجى إعادة تعيين الحجوزات أو انتظار اكتمالها قبل الحذف.");
+                throw new BadRequestException($"لا يمكن حذف الفني — لديه {activeCount} حجز نشط حالياً. " +"يرجى إعادة تعيين الحجوزات أو انتظار اكتمالها قبل الحذف.");
 
             _unitOfWork.GetRepo<Technician, string>().Delete(technician);
             await _unitOfWork.SaveChangesAsync();
@@ -216,6 +207,7 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             var user = await _userManager.FindByIdAsync(technician.UserId);
             if (user is not null)
                 await _userManager.DeleteAsync(user);
+
         }
 
         public async Task<TechniciansDto> ToggleAvailabilityAsync(string id)
@@ -282,9 +274,7 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             return new TechnicianRatingDto
             {
                 TechnicianId = id,
-                AvgRating = reviews.Any()
-                    ? Math.Round(reviews.Average(r => r.TechnicianRating), 2)
-                    : Math.Round((double)technician.Rating, 2),
+                AvgRating = reviews.Any()? Math.Round(reviews.Average(r => r.TechnicianRating), 2): Math.Round((double)technician.Rating, 2),
                 TotalReviews = reviews.Count
             };
         }

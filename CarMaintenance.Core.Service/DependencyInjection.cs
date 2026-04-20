@@ -25,9 +25,7 @@ namespace CarMaintenance.Core.Service
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddApplicationServices(
-            this IServiceCollection services,
-            IConfiguration configuration)
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddAutoMapper(m=> m.AddProfile<MappingProfile>());
 

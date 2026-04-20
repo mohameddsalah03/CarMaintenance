@@ -40,7 +40,7 @@ public class ServiceSpecification : BaseSpecifications<Service, int>
             case "durationdesc":
                 AddOrderByDesc(s => s.EstimatedDurationMinutes);
                 break;
-            default: // Price Asc
+            default: 
                 AddOrderBy(s => s.Name);
                 break;
         }

@@ -3,8 +3,7 @@ using CarMaintenance.Core.Domain.Models.Data.Enums;
 
 namespace CarMaintenance.Core.Domain.Specifications.Bookings.Admin
 {
-    // Fetches all bookings with minimal includes for stats counting
-    // We only need Status, TotalCost, ScheduledDate - no heavy navigation loading
+    
     public class BookingStatsSpecification : BaseSpecifications<Booking, int>
     {
         //  All bookings for counting

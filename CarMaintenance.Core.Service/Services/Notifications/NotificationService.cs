@@ -25,7 +25,6 @@ namespace CarMaintenance.Core.Service.Services.Notifications
             NotificationType type,
             string? actionUrl = null)
         {
-            // Step 1: Save to database (persists for offline users)
             var notification = new Notification
             {
                 UserId = userId,
@@ -40,7 +39,6 @@ namespace CarMaintenance.Core.Service.Services.Notifications
             await _unitOfWork.GetRepo<Notification, int>().AddAsync(notification);
             await _unitOfWork.SaveChangesAsync();
 
-            // Step 2: Broadcast via SignalR (only reaches online users)
             var realTimeDto = new RealTimeNotificationDto
             {
                 Id = notification.Id,
@@ -51,18 +49,15 @@ namespace CarMaintenance.Core.Service.Services.Notifications
                 CreatedAt = notification.CreatedAt
             };
 
-            // Clients.User() sends to ALL devices of this specific user
             await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", realTimeDto);
         }
 
-        //  Returns paginated notifications
+        
         public async Task<Pagination<NotificationDto>> GetMyNotificationsAsync( string userId,NotificationSpecParams specParams)
         {
-            // Get paginated data
             var spec = new NotificationSpecification(userId, specParams);
             var notifications = await _unitOfWork.GetRepo<Notification, int>().GetAllWithSpecAsync(spec);
 
-            // Get total count for pagination metadata
             var countSpec = new NotificationCountSpecification(userId);
             var totalCount = await _unitOfWork.GetRepo<Notification, int>().GetCountAsync(countSpec);
 
@@ -91,7 +86,7 @@ namespace CarMaintenance.Core.Service.Services.Notifications
                 throw new ForbiddenException("ليس لديك صلاحية لتعديل هذا الإشعار");
 
             if (notification.IsRead)
-                return; // Already read, do nothing
+                return; 
 
             notification.IsRead = true;
             _unitOfWork.GetRepo<Notification, int>().Update(notification);

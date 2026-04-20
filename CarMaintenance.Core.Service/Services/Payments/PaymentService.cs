@@ -8,7 +8,6 @@ using CarMaintenance.Shared.DTOs.Payment;
 using CarMaintenance.Shared.DTOs.Payment.Callback;
 using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -17,8 +16,7 @@ namespace CarMaintenance.Core.Service.Services.Payments
     public class PaymentService(
         IPaymobService _paymobService,
         IUnitOfWork _unitOfWork,
-        IOptions<PaymobSettings> _paymobOptions,
-        ILogger<PaymentService> _logger
+        IOptions<PaymobSettings> _paymobOptions
     ) : IPaymentService
     {
         private readonly PaymobSettings _paymobSettings = _paymobOptions.Value;
@@ -26,7 +24,6 @@ namespace CarMaintenance.Core.Service.Services.Payments
         public async Task<PaymentInitiatedDto> InitiatePaymentAsync(
             InitiatePaymentDto dto, string userId)
         {
-            // 1. Fetch and validate booking
             var spec = new BookingSpecification(dto.BookingId);
             var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
 
@@ -42,19 +39,16 @@ namespace CarMaintenance.Core.Service.Services.Payments
             if (booking.Status == BookingStatus.Cancelled)
                 throw new BadRequestException("لا يمكن دفع حجز ملغى");
 
-            // A-07: Guard — Cash bookings cannot use the online payment gateway
             if (booking.PaymentMethod == PaymentMethod.Cash)
                 throw new BadRequestException(
                     "هذا الحجز مسجل بطريقة الدفع نقداً عند الاستلام. " +
                     "لا يمكن استخدام الدفع الإلكتروني لهذا الحجز.");
 
-            // A-07: Guard — Payment is only valid after the service has been completed
             if (booking.Status != BookingStatus.Completed)
                 throw new BadRequestException(
                     "لا يمكن الدفع قبل اكتمال الخدمة. " +
                     "يرجى انتظار إتمام أعمال الصيانة وتأكيد الفني لاكتمال العمل.");
 
-            // 2. Resolve integration ID by payment method from the DTO
             var integrationId = dto.PaymentMethod.ToLower() switch
             {
                 "card"           => _paymobSettings.CardIntegrationId,
@@ -68,18 +62,12 @@ namespace CarMaintenance.Core.Service.Services.Payments
             var phone          = booking.User?.PhoneNumber  ?? "01000000000";
             var merchantOrderId = $"FIXORA-{booking.BookingNumber}";
 
-            // 3. Paymob 3-step flow
             var authToken    = await _paymobService.GetAuthTokenAsync();
             var orderId      = await _paymobService.CreateOrderAsync(authToken, amountCents, merchantOrderId);
             var paymentToken = await _paymobService.GetPaymentKeyAsync(
                 authToken, orderId, amountCents, integrationId, email, phone);
 
             var iFrameUrl = _paymobService.BuildIFrameUrl(paymentToken);
-
-            _logger.LogInformation(
-                "[Payment] Initiated for Booking {BookingNumber}, Amount: {Amount} cents",
-                booking.BookingNumber, amountCents);
-
             return new PaymentInitiatedDto
             {
                 IFrameUrl    = iFrameUrl,
@@ -89,7 +77,6 @@ namespace CarMaintenance.Core.Service.Services.Payments
 
         public async Task HandleCallbackAsync(string rawBody, string hmac)
         {
-            // 1. Deserialize callback
             PaymobCallbackDto? callback;
             try
             {
@@ -98,66 +85,49 @@ namespace CarMaintenance.Core.Service.Services.Payments
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "[Payment] Failed to deserialize Paymob callback body.");
                 return;
             }
 
-            // 2. Only handle TRANSACTION type
             if (callback?.Type != "TRANSACTION" || callback.Obj == null)
             {
-                _logger.LogInformation("[Payment] Ignored non-TRANSACTION callback: {Type}", callback?.Type);
                 return;
             }
 
-            // 3. Verify HMAC
             if (!_paymobService.VerifyHmac(callback.Obj, hmac))
             {
-                _logger.LogWarning("[Payment] HMAC mismatch — possible fake callback rejected.");
                 throw new BadRequestException("Invalid HMAC signature");
             }
 
-            // 4. Resolve booking from MerchantOrderId
             var merchantOrderId = callback.Obj.Order?.MerchantOrderId;
             if (string.IsNullOrEmpty(merchantOrderId))
             {
-                _logger.LogWarning("[Payment] Callback received with no MerchantOrderId.");
                 return;
             }
 
-            // "FIXORA-BK-20260325-A3F9C2" → "BK-20260325-A3F9C2"
             var bookingNumber = merchantOrderId.Replace("FIXORA-", "");
             var bookingSpec   = new BookingByNumberSpecification(bookingNumber);
             var booking       = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(bookingSpec);
 
             if (booking == null)
             {
-                _logger.LogWarning("[Payment] No booking found for BookingNumber: {BookingNumber}", bookingNumber);
                 return;
             }
 
-            // 5. Idempotency — skip if already processed
             if (booking.PaymentStatus == PaymentStatus.Paid)
             {
-                _logger.LogInformation(
-                    "[Payment] Duplicate callback ignored — Booking {BookingNumber} already marked Paid.",
-                    bookingNumber);
                 return;
             }
 
-            // 6. Update payment status
             if (callback.Obj.Success && !callback.Obj.Pending)
             {
                 booking.PaymentStatus = PaymentStatus.Paid;
-                _logger.LogInformation("[Payment] Booking {BookingNumber} marked as Paid.", bookingNumber);
             }
             else if (!callback.Obj.Success && !callback.Obj.Pending)
             {
                 booking.PaymentStatus = PaymentStatus.Failed;
-                _logger.LogWarning("[Payment] Booking {BookingNumber} payment Failed.", bookingNumber);
             }
             else
             {
-                _logger.LogInformation("[Payment] Booking {BookingNumber} payment still Pending.", bookingNumber);
                 return;
             }
 

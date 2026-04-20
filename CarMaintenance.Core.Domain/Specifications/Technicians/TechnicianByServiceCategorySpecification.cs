@@ -6,9 +6,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Technicians
     {
         public TechnicianByServiceCategorySpecification(string serviceCategory , bool onlyAvailable) :
             base(t=>
-                //  Must be available (if flag is true)
                 (!onlyAvailable || t.IsAvailable) &&
-                //  Specialization matches
                 (t.Specialization.Contains(serviceCategory) ||
                  t.Specialization.Contains("عام") ||
                  t.Specialization.Contains("شامل") ||

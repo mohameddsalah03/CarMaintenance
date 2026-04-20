@@ -52,7 +52,6 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             await unitOfWork.GetRepo<Vehicle, int>().AddAsync(vehicle);
             await unitOfWork.SaveChangesAsync();
 
-            // Get with Owner data
             var spec = new VehicleSpecification(vehicle.Id, userId);
             var createdVehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(spec);
 
@@ -78,14 +77,12 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             unitOfWork.GetRepo<Vehicle, int>().Update(vehicle);
             await unitOfWork.SaveChangesAsync();
 
-            // Get updated vehicle with Owner
             var updatedSpec = new VehicleSpecification(vehicle.Id, userId);
             var updatedVehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(updatedSpec);
 
             return mapper.Map<VehicleDto>(updatedVehicle!);
         }
 
-        // Check for active bookings before deleting
         public async Task DeleteVehicleAsync(int id, string userId)
         {
             var spec = new VehicleSpecification(id, userId);
@@ -94,14 +91,11 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             if (vehicle is null)
                 throw new NotFoundException(nameof(Vehicle), id);
 
-            // Block deletion if vehicle has active bookings
             var activeBookingSpec = new BookingByVehicleActiveSpecification(id);
             var activeCount = await unitOfWork.GetRepo<Booking, int>().GetCountAsync(activeBookingSpec);
 
             if (activeCount > 0)
-                throw new BadRequestException(
-                    $"لا يمكن حذف السيارة — لديها {activeCount} حجز نشط حالياً. " +
-                    "يرجى إلغاء أو انتظار اكتمال جميع الحجوزات قبل الحذف.");
+                throw new BadRequestException($"لا يمكن حذف السيارة — لديها {activeCount} حجز نشط حالياً. " + "يرجى إلغاء أو انتظار اكتمال جميع الحجوزات قبل الحذف.");
 
             unitOfWork.GetRepo<Vehicle, int>().Delete(vehicle);
             await unitOfWork.SaveChangesAsync();

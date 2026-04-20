@@ -66,7 +66,6 @@ namespace CarMaintenance.Core.Service.Services.Reviews
 
             await UpdateTechnicianRatingAsync(booking.TechnicianId);
             
-            // Notify the technician 
             if (!string.IsNullOrEmpty(booking.AssignedTechnician?.UserId))
             {
                 await _notificationService.SendAsync(
