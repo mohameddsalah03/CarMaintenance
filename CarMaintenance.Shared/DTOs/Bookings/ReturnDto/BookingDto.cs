@@ -12,7 +12,6 @@
         public string Status { get; set; } = null!;
         public string PaymentMethod { get; set; } = null!;
 
-        public string? TechnicianReport { get; set; }
 
         // Customer Info
         public string CustomerId { get; set; } = null!;
@@ -33,6 +32,7 @@
         public string? TechnicianSpecialization { get; set; }
         public decimal? TechnicianRate { get; set; }
         public int? TechnicianExperienceYears { get; set; }
+        public string? TechnicianReport { get; set; }
 
         // Services
         public List<BookingServiceDetailsDto> BookingServiceDetailsDtos { get; set; } = new();

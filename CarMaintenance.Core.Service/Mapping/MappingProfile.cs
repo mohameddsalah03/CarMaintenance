@@ -90,11 +90,13 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.ServiceCategory,opt => opt.MapFrom(src => src.Service.Category))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
-            CreateMap<AdditionalIssue, AdditionalIssueDto>();
+            // تأكد أن AdditionalIssueDto يحتوي على Property: public bool? IsApproved { get; set; }
+            CreateMap<AdditionalIssue, AdditionalIssueDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.IsApproved)); // إضافتها هنا
 
             CreateMap<CreateBookingDto, Booking>()
-                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src =>
-                    Enum.Parse<PaymentMethod>(src.PaymentMethod, true)))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => Enum.Parse<PaymentMethod>(src.PaymentMethod, true)))
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.PaymentStatus, opt => opt.Ignore())
                 .ForMember(dest => dest.BookingNumber, opt => opt.Ignore())

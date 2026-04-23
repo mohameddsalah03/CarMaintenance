@@ -16,7 +16,7 @@ using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto.BookingDetails;
 using CarMaintenance.Shared.DTOs.Common;
 using CarMaintenance.Shared.Exceptions;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity;
 
 namespace CarMaintenance.Core.Service.Services.Bookings
 {
@@ -24,7 +24,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         IUnitOfWork _unitOfWork,
         IMapper _mapper,
         IAiTechnicianService _aiTechnicianService,
-        INotificationService _notificationService           
+        INotificationService _notificationService  ,
+        UserManager<ApplicationUser> _userManager
     ) : IBookingService
     {
         #region Customer
@@ -155,6 +156,14 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 message: $"تم إنشاء الحجز رقم {booking.BookingNumber} بنجاح. سيتم تعيين فني قريباً.",
                 type: NotificationType.BookingCreated,
                 actionUrl: $"/bookings/{booking.Id}");
+            
+            await NotifyAdminsAsync(
+                title: $"حجز جديد #{booking.BookingNumber}",
+                message: $"قام العميل {createdBooking!.User.DisplayName} بإنشاء حجز جديد " +
+                         $"للسيارة {createdBooking.Vehicle.Brand} {createdBooking.Vehicle.Model}. " +
+                         $"التكلفة: {booking.TotalCost} ج.م.",
+                type: NotificationType.BookingCreated,
+                actionUrl: $"/admin/bookings/{booking.Id}");
 
             return _mapper.Map<BookingDto>(createdBooking!);
         }
@@ -197,6 +206,14 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     type: NotificationType.BookingCancelled,
                     actionUrl: $"/technician/bookings/{booking.Id}");
             }
+
+            await NotifyAdminsAsync(
+                title: $"إلغاء حجز #{booking.BookingNumber}",
+                message: $"قام العميل {booking.User.DisplayName} بإلغاء الحجز رقم {booking.BookingNumber}. " +
+                         $"السيارة: {booking.Vehicle?.Brand} {booking.Vehicle?.Model}.",
+                type: NotificationType.BookingCancelled,
+                actionUrl: $"/admin/bookings/{booking.Id}");
+
         }
 
        
@@ -270,9 +287,13 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (booking.Status == BookingStatus.Cancelled)
                 throw new BadRequestException("الفاتورة غير متاحة - الحجز ملغى");
 
+            // حساب تكلفة الخدمات الأساسية
             decimal servicesCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0);
-            decimal additionalCost = booking.AdditionalIssues.Where(ai => ai.IsApproved)
-                                                             .Sum(ai => ai.EstimatedCost);
+
+            // ✅ تصحيح: إضافة == true للتعامل مع الـ Nullable Boolean
+            decimal additionalCost = booking.AdditionalIssues
+                .Where(ai => ai.IsApproved == true)
+                .Sum(ai => ai.EstimatedCost);
 
             return new InvoiceDto
             {
@@ -290,11 +311,15 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 TechnicianName = booking.AssignedTechnician?.User?.DisplayName!,
                 TechnicianSpecialization = booking.AssignedTechnician?.Specialization!,
                 Services = _mapper.Map<List<InvoiceServiceItemDto>>(booking.BookingServices),
+
+                // ✅ تصحيح: إضافة == true هنا أيضاً
                 ApprovedIssues = _mapper.Map<List<InvoiceAdditionalIssueDto>>(
-                    booking.AdditionalIssues.Where(ai => ai.IsApproved).ToList()),
+                    booking.AdditionalIssues.Where(ai => ai.IsApproved == true).ToList()
+                ),
+
                 ServicesCost = servicesCost,
                 AdditionalCost = additionalCost,
-                TotalCost = booking.TotalCost,
+                TotalCost = servicesCost + additionalCost, // يفضل جمعهم هنا لضمان الدقة
                 PaymentMethod = booking.PaymentMethod.ToString(),
                 PaymentStatus = booking.PaymentStatus.ToString(),
             };
@@ -360,7 +385,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (booking.TechnicianId != technician.Id)
                 throw new ForbiddenException("ليس لديك صلاحية لإضافة مشاكل إضافية لهذا الحجز");
 
-            if (booking.Status != BookingStatus.InProgress)
+            if (booking.Status != BookingStatus.InProgress && booking.Status != BookingStatus.Pending)
                 throw new BadRequestException(
                     $"لا يمكن إضافة مشكلة إضافية. " +
                     $"حالة الحجز الحالية: '{booking.Status}'. " +
@@ -711,15 +736,29 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                                        $"({assignedTechnician.Specialization}) للحجز رقم {booking.BookingNumber}.",
                             type: NotificationType.TechnicianAssigned,
                             actionUrl: $"/bookings/{booking.Id}");
+
+                        await _notificationService.SendAsync(
+                            userId: assignedTechnician.UserId,
+                            title: "تم تعيينك على حجز جديد",
+                            message: $"تم تعيينك على الحجز رقم {booking.BookingNumber}. " +
+                                       $"الموعد: {booking.ScheduledDate:dd/MM/yyyy HH:mm}.",
+                            type: NotificationType.TechnicianAssigned,
+                            actionUrl: $"/technician/bookings/{booking.Id}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                
+               
+                await NotifyAdminsAsync(
+                    title: $"حجز يحتاج تعيين فني يدوي #{booking.BookingNumber}",
+                    message: $"تعذّر تعيين فني تلقائياً للحجز رقم {booking.BookingNumber}. " +
+                             $"يرجى تعيين فني يدوياً من لوحة التحكم.",
+                    type: NotificationType.TechnicianAssigned,
+                    actionUrl: $"/admin/bookings/{booking.Id}");
+              
             }
         }
-
         private static string GenerateBookingNumber()
         {
             var date = DateTime.UtcNow.ToString("yyyyMMdd");
@@ -783,6 +822,27 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return $"{dayLabel} {hour12}:00 {period}";
         }
 
+
+        
+        private async Task NotifyAdminsAsync(
+            string title,
+            string message,
+            NotificationType type,
+            string? actionUrl = null)
+        {
+            var admins = await _userManager.GetUsersInRoleAsync("Admin");
+            foreach (var admin in admins)
+            {
+                await _notificationService.SendAsync(
+                    userId: admin.Id,
+                    title: title,
+                    message: message,
+                    type: type,
+                    actionUrl: actionUrl);
+            }
+        }
+
         #endregion
+
     }
 }
