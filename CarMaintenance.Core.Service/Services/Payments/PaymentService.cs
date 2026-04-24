@@ -63,10 +63,10 @@ namespace CarMaintenance.Core.Service.Services.Payments
 
             var integrationId = dto.PaymentMethod.ToLower() switch
             {
-                "card"           => _paymobSettings.CardIntegrationId,
-                "vodafone_cash"  => _paymobSettings.VodafoneIntegrationId,
+                "card" => _paymobSettings.CardIntegrationId,
+                "wallet" => _paymobSettings.WalletIntegrationId,
                 _ => throw new BadRequestException(
-                    "طريقة دفع غير صحيحة. القيم المقبولة: card, vodafone_cash")
+                    "طريقة دفع غير صحيحة. القيم المقبولة: card, wallet")
             };
 
             var amountCents    = (int)(booking.TotalCost * 100);
