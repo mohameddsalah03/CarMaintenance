@@ -9,13 +9,17 @@ public class AdditionalIssue : BaseEntity<int>
     public decimal EstimatedCost { get; set; }
     public int EstimatedDurationMinutes { get; set; }
     public AdditionalIssueStatus Status { get; set; } = AdditionalIssueStatus.Pending;
-    public bool IsApproved => Status == AdditionalIssueStatus.Approved;
+
+    public bool? IsApproved
+    {
+        get
+        {
+            if (Status == AdditionalIssueStatus.Pending) return null;  
+            return Status == AdditionalIssueStatus.Approved;          
+        }
+    }
 
     public DateTime CreatedAt { get; set; }
-
-    // Foreign Key
     public int BookingId { get; set; }
-
-    // Navigation Property
     public Booking Booking { get; set; } = null!;
 }

@@ -21,8 +21,7 @@ namespace CarMaintenance.Core.Service.Services.Payments
     {
         private readonly PaymobSettings _paymobSettings = _paymobOptions.Value;
 
-        public async Task<PaymentInitiatedDto> InitiatePaymentAsync(
-            InitiatePaymentDto dto, string userId)
+        public async Task<PaymentInitiatedDto> InitiatePaymentAsync( InitiatePaymentDto dto, string userId)
         {
             var spec = new BookingSpecification(dto.BookingId);
             var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
@@ -40,21 +39,34 @@ namespace CarMaintenance.Core.Service.Services.Payments
                 throw new BadRequestException("لا يمكن دفع حجز ملغى");
 
             if (booking.PaymentMethod == PaymentMethod.Cash)
-                throw new BadRequestException(
-                    "هذا الحجز مسجل بطريقة الدفع نقداً عند الاستلام. " +
-                    "لا يمكن استخدام الدفع الإلكتروني لهذا الحجز.");
+                throw new BadRequestException("هذا الحجز مسجل بطريقة الدفع نقداً عند الاستلام. " +  "لا يمكن استخدام الدفع الإلكتروني لهذا الحجز.");
 
-            if (booking.Status != BookingStatus.Completed)
-                throw new BadRequestException(
-                    "لا يمكن الدفع قبل اكتمال الخدمة. " +
-                    "يرجى انتظار إتمام أعمال الصيانة وتأكيد الفني لاكتمال العمل.");
+            //
+            if (booking.Status == BookingStatus.Pending)
+                throw new BadRequestException( "لا يمكن الدفع الآن — الحجز لم يبدأ بعد وقد تتغير التكلفة النهائية.");
+
+            if (booking.Status == BookingStatus.WaitingClientApproval)
+                throw new BadRequestException( "لا يمكن الدفع الآن — يوجد تكلفة إضافية في انتظار موافقتك. " + "يرجى الرد على التكلفة الإضافية أولاً.");
+
+            var correctCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0) 
+                            + booking.AdditionalIssues.Where(ai => ai.Status == AdditionalIssueStatus.Approved)
+                                                      .Sum(ai => ai.EstimatedCost);
+
+            // لو التكلفة المحفوظة مختلفة → نصلحها قبل الدفع
+            if (booking.TotalCost != correctCost && correctCost > 0)
+            {
+                booking.TotalCost = correctCost;
+                _unitOfWork.GetRepo<Booking, int>().Update(booking);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
 
             var integrationId = dto.PaymentMethod.ToLower() switch
             {
-                "card"           => _paymobSettings.CardIntegrationId,
-                "vodafone_cash"  => _paymobSettings.VodafoneIntegrationId,
+                "card" => _paymobSettings.CardIntegrationId,
+                "wallet" => _paymobSettings.WalletIntegrationId,
                 _ => throw new BadRequestException(
-                    "طريقة دفع غير صحيحة. القيم المقبولة: card, vodafone_cash")
+                    "طريقة دفع غير صحيحة. القيم المقبولة: card, wallet")
             };
 
             var amountCents    = (int)(booking.TotalCost * 100);
@@ -64,8 +76,7 @@ namespace CarMaintenance.Core.Service.Services.Payments
 
             var authToken    = await _paymobService.GetAuthTokenAsync();
             var orderId      = await _paymobService.CreateOrderAsync(authToken, amountCents, merchantOrderId);
-            var paymentToken = await _paymobService.GetPaymentKeyAsync(
-                authToken, orderId, amountCents, integrationId, email, phone);
+            var paymentToken = await _paymobService.GetPaymentKeyAsync( authToken, orderId, amountCents, integrationId, email, phone);
 
             var iFrameUrl = _paymobService.BuildIFrameUrl(paymentToken);
             return new PaymentInitiatedDto

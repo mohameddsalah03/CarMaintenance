@@ -70,9 +70,12 @@ namespace CarMaintenance.Core.Service.Services.Technicians
         {
             
             var displayNameTaken = await _userManager.Users.AnyAsync(u => u.DisplayName == createDto.DisplayName);
-
             if (displayNameTaken)
                 throw new BadRequestException($"الاسم '{createDto.DisplayName}' مستخدم بالفعل من قِبَل مستخدم آخر. " + "يرجى اختيار اسم عرض مختلف.");
+
+            var phoneTaken = await _userManager.Users.AnyAsync(t => t.PhoneNumber == createDto.PhoneNumber);
+            if (phoneTaken)
+                throw new BadRequestException($"رقم الهاتف '{createDto.PhoneNumber}' مستخدم بالفعل.");
 
             var user = new ApplicationUser
             {
@@ -200,6 +203,13 @@ namespace CarMaintenance.Core.Service.Services.Technicians
 
             if (activeCount > 0)
                 throw new BadRequestException($"لا يمكن حذف الفني — لديه {activeCount} حجز نشط حالياً. " +"يرجى إعادة تعيين الحجوزات أو انتظار اكتمالها قبل الحذف.");
+
+            var reviews = await _unitOfWork.GetRepo<Review, int>().GetAllWithSpecAsync(new ReviewSpecification(id, byTechnician: true), withTracking: true);
+            foreach (var review in reviews)
+                _unitOfWork.GetRepo<Review, int>().Delete(review);
+
+            if (reviews.Any())
+                await _unitOfWork.SaveChangesAsync();
 
             _unitOfWork.GetRepo<Technician, string>().Delete(technician);
             await _unitOfWork.SaveChangesAsync();

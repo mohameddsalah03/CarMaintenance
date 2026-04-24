@@ -32,12 +32,11 @@ namespace CarMaintenance.Core.Service.Services.Auth
         {
             var displayNameTaken = await _userManager.Users.AnyAsync(u => u.DisplayName == registerDto.DisplayName);
             if (displayNameTaken)
-                throw new BadRequestException($"Display name '{registerDto.DisplayName}' is already taken");
+                throw new BadRequestException($"الاسم '{registerDto.DisplayName}' مستخدم بالفعل من قِبَل مستخدم آخر");
 
             var phoneTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == registerDto.PhoneNumber);
             if (phoneTaken)
-                throw new BadRequestException(
-                    $"Phone Number '{registerDto.PhoneNumber}' is already taken");
+                throw new BadRequestException($"رقم الهاتف '{registerDto.PhoneNumber}' مستخدم بالفعل.");
 
             var userName = GenerateUserName(registerDto.Email); 
             var user = new ApplicationUser()
@@ -51,8 +50,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
             var result = await _userManager.CreateAsync(user, registerDto.Password);
 
             if (!result.Succeeded)
-                throw new ValidationException("Registration failed", result.Errors.Select(e => e.Description));
-            
+                throw new ValidationException("حدث خطأ أثناء إنشاء الحساب", result.Errors.Select(e => e.Description));
 
             //  Adding role for customer after register 
             await _userManager.AddToRoleAsync(user, "Customer");
@@ -80,7 +78,7 @@ namespace CarMaintenance.Core.Service.Services.Auth
         public async Task<UserDto> LoginAsync(LoginDto loginDto)
         {
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
-            if (user is null) throw new UnauthorizedException("Invalid email or password");
+            if (user is null) throw new UnauthorizedException("البريد الإلكتروني أو كلمة المرور غير صحيحة");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, lockoutOnFailure: true); // 5 to MaxFailedAccessAttempts
 
