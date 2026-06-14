@@ -14,5 +14,13 @@
         public List<string> ExcludedItems { get; set; } = new();
         public List<string> Requirements { get; set; } = new();
 
+        /// <summary>
+        /// Average technician + service rating for bookings that used this service.
+        /// Shown on the service listing and detail pages.
+        /// </summary>
+        public double AverageRating { get; set; }
+
+        /// <summary>Total number of reviews related to this service.</summary>
+        public int ReviewCount { get; set; }
     }
 }

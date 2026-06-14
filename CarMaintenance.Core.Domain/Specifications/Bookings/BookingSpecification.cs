@@ -8,7 +8,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
 
     {
 
-        public BookingSpecification(BookingSpecParams specParams) 
+        public BookingSpecification(BookingSpecParams specParams)
             : base(BuildCriteria(specParams))
         {
             ApplySorting(specParams.Sort);
@@ -25,12 +25,12 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
             AddOrderByDesc(b => b.ScheduledDate);
         }
 
-        public BookingSpecification(int id) : base(id) 
+        public BookingSpecification(int id) : base(id)
         {
             AddIncludes();
         }
 
-        
+
         private static Expression<Func<Booking, bool>> BuildCriteria(BookingSpecParams specParams)
         {
             return b =>
@@ -69,7 +69,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
             // for ReviewSummaryDto
             AddThenInclude($"{nameof(Booking.Review)}.{nameof(Review.User)}");
             AddThenInclude($"{nameof(Booking.Review)}.{nameof(Review.Technician)}.{nameof(Technician.User)}");
-            }
+        }
 
     }
 }

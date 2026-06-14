@@ -1,5 +1,6 @@
 ﻿using CarMaintenance.Shared.DTOs.Bookings;
 using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
+using CarMaintenance.Shared.DTOs.Bookings.AvailableSlots;
 using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.Invoice;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
@@ -17,7 +18,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
         Task<InvoiceDto> GetBookingInvoiceAsync(int bookingId, string userId);  
         Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto approveAdditionalIssue, string userId);
         Task CancelBookingAsync(int id, string userId);
-
+        Task<AvailableSlotsResponseDto> GetAvailableSlotsAsync(List<int> serviceIds);
 
         //Technicians
         Task<Pagination<BookingDto>> GetMyAssignedBookingsAsync(BookingSpecParams specParams, string userId);
@@ -27,7 +28,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
 
 
         //Admin 
-        Task CancelBookingByAdminAsync(int id);
+        //Task CancelBookingByAdminAsync(int id);
         Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams);
         Task<BookingDto> AssignTechnicianAsync(int bookingId);
 

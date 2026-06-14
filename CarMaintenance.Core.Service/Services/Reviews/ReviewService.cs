@@ -9,15 +9,19 @@ using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Core.Service.Abstraction.Services.Reviews;
 using CarMaintenance.Shared.DTOs.Reviews;
 using CarMaintenance.Shared.Exceptions;
+using Microsoft.AspNetCore.Identity;
 
 namespace CarMaintenance.Core.Service.Services.Reviews
 {
     internal class ReviewService(
         IUnitOfWork _unitOfWork ,
         IMapper _mapper,
-        INotificationService _notificationService
+        INotificationService _notificationService,
+         UserManager<ApplicationUser> _userManager
         ) : IReviewService
     {
+        //
+        private const int LowRatingThreshold = 3;
 
         public async Task<IEnumerable<ReviewDto>> GetAllReviewsAsync()
         {
@@ -75,6 +79,36 @@ namespace CarMaintenance.Core.Service.Services.Reviews
                                $"{booking.BookingNumber} — التقييم: {dto.TechnicianRating}/5.",
                     type: NotificationType.NewReview,
                     actionUrl: $"/technician/bookings/{booking.Id}");
+            }
+
+            // 
+            if (dto.TechnicianRating < LowRatingThreshold ||
+                dto.ServiceRating < LowRatingThreshold)
+            {
+                var techSpec = new TechnicianSpecification(booking.TechnicianId);
+                var technician = await _unitOfWork.GetRepo<Technician, string>()
+                    .GetWithSpecAsync(techSpec);
+
+                var adminTitle = dto.TechnicianRating < LowRatingThreshold
+                    ? $" تقييم ضعيف للفني — {technician?.User.DisplayName}"
+                    : $" تقييم ضعيف للخدمة — حجز #{booking.BookingNumber}";
+
+                var adminMsg = $"تقييم الفني: {dto.TechnicianRating}/5 | " +
+                               $"تقييم الخدمة: {dto.ServiceRating}/5.\n" +
+                               $"العميل: {booking.User.DisplayName}\n" +
+                               (string.IsNullOrEmpty(dto.Comment)
+                                   ? "" : $"التعليق: {dto.Comment}");
+
+                var admins = await _userManager.GetUsersInRoleAsync("Admin");
+                foreach (var admin in admins)
+                {
+                    await _notificationService.SendAsync(
+                        userId: admin.Id,
+                        title: adminTitle,
+                        message: adminMsg,
+                        type: NotificationType.NewReview,
+                        actionUrl: $"/admin/technicians/{booking.TechnicianId}/reviews");
+                }
             }
 
             var reviewSpec = new ReviewSpecification(dto.BookingId);
