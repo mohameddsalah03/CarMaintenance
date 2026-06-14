@@ -2,7 +2,7 @@
   {
     "id": 1,
     "name": "تغيير زيت المحرك",
-    "category": "oil_change",
+    "category": "تغيير الزيت",
     "description": "تغيير زيت المحرك وفلتر الزيت بزيت عالي الجودة مناسب لنوع السيارة",
     "basePrice": 150.0,
     "estimatedDurationMinutes": 30,
@@ -13,7 +13,7 @@
   {
     "id": 2,
     "name": "إصلاح تسريب الزيت",
-    "category": "oil_leak",
+    "category": "تسريب الزيت",
     "description": "فحص وإصلاح جميع مناطق تسريب الزيت في المحرك وعلبة الفتيس",
     "basePrice": 300.0,
     "estimatedDurationMinutes": 90,
@@ -24,7 +24,7 @@
   {
     "id": 3,
     "name": "إصلاح الفرامل",
-    "category": "brakes",
+    "category": "الفرامل",
     "description": "فحص وإصلاح منظومة الفرامل كاملة شاملاً التيل والأقراص والأسطوانات",
     "basePrice": 400.0,
     "estimatedDurationMinutes": 120,
@@ -35,7 +35,7 @@
   {
     "id": 4,
     "name": "تغيير إطارات",
-    "category": "tires",
+    "category": "الإطارات",
     "description": "تركيب وتغيير الإطارات مع الموازنة وضبط ضغط الهواء",
     "basePrice": 200.0,
     "estimatedDurationMinutes": 45,
@@ -46,7 +46,7 @@
   {
     "id": 5,
     "name": "ضبط الزوايا والتوازن",
-    "category": "alignment_balancing",
+    "category": "ضبط الزوايا",
     "description": "ضبط زوايا العجلات وتوازن الإطارات بأجهزة الكمبيوتر",
     "basePrice": 180.0,
     "estimatedDurationMinutes": 60,
@@ -57,7 +57,7 @@
   {
     "id": 6,
     "name": "إصلاح نظام التعليق",
-    "category": "suspension",
+    "category": "نظام التعليق",
     "description": "فحص وإصلاح مكونات نظام التعليق الأمامي والخلفي",
     "basePrice": 500.0,
     "estimatedDurationMinutes": 150,
@@ -68,7 +68,7 @@
   {
     "id": 7,
     "name": "إصلاح نظام التوجيه",
-    "category": "steering",
+    "category": "نظام التوجيه",
     "description": "فحص وإصلاح نظام التوجيه الهيدروليكي أو الكهربائي",
     "basePrice": 450.0,
     "estimatedDurationMinutes": 120,
@@ -79,7 +79,7 @@
   {
     "id": 8,
     "name": "إصلاح ناقل الحركة",
-    "category": "transmission",
+    "category": "ناقل الحركة",
     "description": "فحص وإصلاح علبة الفتيس الأوتوماتيك أو العادية",
     "basePrice": 800.0,
     "estimatedDurationMinutes": 240,
@@ -90,7 +90,7 @@
   {
     "id": 9,
     "name": "فحص وإصلاح المكيف",
-    "category": "ac",
+    "category": "المكيف",
     "description": "فحص وصيانة منظومة التكييف كاملة شاملاً الغاز والكمبروسر",
     "basePrice": 350.0,
     "estimatedDurationMinutes": 90,
@@ -101,7 +101,7 @@
   {
     "id": 10,
     "name": "إصلاح نظام التبريد",
-    "category": "cooling",
+    "category": "نظام التبريد",
     "description": "فحص وإصلاح نظام تبريد المحرك شاملاً الرادياتير والترموستات",
     "basePrice": 400.0,
     "estimatedDurationMinutes": 120,
@@ -112,7 +112,7 @@
   {
     "id": 11,
     "name": "فحص المحرك الإلكتروني",
-    "category": "engine",
+    "category": "المحرك",
     "description": "فحص المحرك بالكمبيوتر وقراءة أكواد الأعطال وتشخيص المشكلة",
     "basePrice": 200.0,
     "estimatedDurationMinutes": 60,
@@ -123,7 +123,7 @@
   {
     "id": 12,
     "name": "إصلاح نظام العادم",
-    "category": "exhaust",
+    "category": "نظام العادم",
     "description": "فحص وإصلاح ماسورة العادم والكتالست والمفصلات",
     "basePrice": 300.0,
     "estimatedDurationMinutes": 90,
@@ -134,7 +134,7 @@
   {
     "id": 13,
     "name": "إصلاح مشاكل التشغيل",
-    "category": "starting",
+    "category": "بدء التشغيل",
     "description": "تشخيص وإصلاح مشاكل تشغيل المحرك شاملاً البادئ والدينامو",
     "basePrice": 250.0,
     "estimatedDurationMinutes": 90,
@@ -145,7 +145,7 @@
   {
     "id": 14,
     "name": "إصلاح الكهرباء",
-    "category": "electrical",
+    "category": "كهرباء السيارة",
     "description": "فحص وإصلاح الأعطال الكهربائية في السيارة شاملاً الأسلاك والمفاتيح",
     "basePrice": 300.0,
     "estimatedDurationMinutes": 120,
@@ -156,7 +156,7 @@
   {
     "id": 15,
     "name": "إصلاح البطارية",
-    "category": "battery",
+    "category": "البطارية",
     "description": "فحص البطارية والدينامو وإصلاح أو استبدال البطارية",
     "basePrice": 150.0,
     "estimatedDurationMinutes": 30,
@@ -167,7 +167,7 @@
   {
     "id": 16,
     "name": "تنظيف وتلميع السيارة",
-    "category": "cleaning",
+    "category": "التنظيف",
     "description": "غسيل وتنظيف شامل للسيارة من الداخل والخارج مع التلميع",
     "basePrice": 120.0,
     "estimatedDurationMinutes": 60,

@@ -6,6 +6,6 @@
         InProgress,
         WaitingClientApproval,
         Completed,
-        Cancelled,
+        Cancelled
     }
 }

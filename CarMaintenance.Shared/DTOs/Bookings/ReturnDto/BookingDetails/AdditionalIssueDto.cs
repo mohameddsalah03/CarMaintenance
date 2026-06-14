@@ -10,5 +10,6 @@
         public string Status { get; set; } = null!;
         public bool IsApproved { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsCritical { get; set; } 
     }
 }

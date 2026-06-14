@@ -23,5 +23,7 @@ namespace CarMaintenance.Shared.DTOs.Bookings.Additionallssues
         [Range(1, 1440, ErrorMessage = "المدة يجب أن تكون بين 1 و 1440 دقيقة")]
         public int EstimatedDurationMinutes { get; set; }
 
+        public bool IsCritical { get; set; } = false;
+
     }
 }

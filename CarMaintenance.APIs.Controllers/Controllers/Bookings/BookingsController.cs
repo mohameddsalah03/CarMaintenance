@@ -2,6 +2,7 @@
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Shared.DTOs.Bookings;
 using CarMaintenance.Shared.DTOs.Bookings.Additionallssues;
+using CarMaintenance.Shared.DTOs.Bookings.AvailableSlots;
 using CarMaintenance.Shared.DTOs.Bookings.CreateBooking;
 using CarMaintenance.Shared.DTOs.Bookings.Invoice;
 using CarMaintenance.Shared.DTOs.Bookings.ReturnDto;
@@ -77,6 +78,24 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
             return Ok(invoice);
         }
 
+        //[Authorize(Roles = "Customer")]
+        //[HttpGet("available-slots")]
+        //public async Task<ActionResult<AvailableSlotsResponseDto>> GetAvailableSlots(
+        //                [FromQuery] List<int> serviceIds,
+        //                [FromQuery] DateTime? preferredDate)
+        //{
+        //    var result = await _serviceManager.BookingService.GetAvailableSlotsAsync(serviceIds, preferredDate);
+        //    return Ok(result);
+        //}
+        [Authorize(Roles = "Customer")]
+        [HttpGet("available-slots")]
+        public async Task<ActionResult<AvailableSlotsResponseDto>> GetAvailableSlots([FromQuery] List<int> serviceIds) // تم حذف preferredDate
+        {
+            // بننادي الخدمة وبنعتمد على تاريخ اليوم تلقائياً داخل الـ Service
+            var result = await _serviceManager.BookingService.GetAvailableSlotsAsync(serviceIds);
+            return Ok(result);
+        }
+
         #endregion
 
         #region Admin Endpoints
@@ -92,13 +111,13 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
             => Ok(await _serviceManager.BookingService.AssignTechnicianAsync(id));
 
         
-        [Authorize(Roles = "Admin")]
-        [HttpPatch("{id:int}/admin-cancel")]
-        public async Task<ActionResult> AdminCancelBooking(int id)
-        {
-            await _serviceManager.BookingService.CancelBookingByAdminAsync(id);
-            return Ok(new { message = "تم إلغاء الحجز بواسطة الإدارة" });
-        }
+        //[Authorize(Roles = "Admin")]
+        //[HttpPatch("{id:int}/admin-cancel")]
+        //public async Task<ActionResult> AdminCancelBooking(int id)
+        //{
+        //    await _serviceManager.BookingService.CancelBookingByAdminAsync(id);
+        //    return Ok(new { message = "تم إلغاء الحجز بواسطة الإدارة" });
+        //}
 
         #endregion
 

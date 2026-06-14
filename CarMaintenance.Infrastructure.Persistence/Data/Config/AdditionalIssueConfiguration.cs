@@ -32,6 +32,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Config
 
             builder.Property(ai => ai.CreatedAt).IsRequired();
 
+            builder.Property(ai => ai.IsCritical)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             // Store Status as string, default = Pending
             builder.Property(ai => ai.Status)
                 .HasColumnType("nvarchar(20)")

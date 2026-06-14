@@ -3,7 +3,7 @@ using CarMaintenance.Core.Domain.Models.Data.Enums;
 
 namespace CarMaintenance.Core.Domain.Specifications.Bookings.Admin
 {
-    
+
     public class BookingStatsSpecification : BaseSpecifications<Booking, int>
     {
         //  All bookings for counting
@@ -20,6 +20,12 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings.Admin
         // Bookings by status
         public BookingStatsSpecification(BookingStatus status)
             : base(b => b.Status == status)
+        {
+        }
+
+
+        public BookingStatsSpecification(string technicianId, DateTime date)
+            : base(b => b.TechnicianId == technicianId && b.ScheduledDate.Date == date.Date)
         {
         }
 

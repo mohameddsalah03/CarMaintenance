@@ -19,6 +19,8 @@ public class AdditionalIssue : BaseEntity<int>
         }
     }
 
+    public bool IsCritical { get; set; } = false;
+
     public DateTime CreatedAt { get; set; }
     public int BookingId { get; set; }
     public Booking Booking { get; set; } = null!;

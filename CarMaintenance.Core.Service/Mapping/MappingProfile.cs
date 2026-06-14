@@ -90,10 +90,10 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.ServiceCategory,opt => opt.MapFrom(src => src.Service.Category))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
-            // تأكد أن AdditionalIssueDto يحتوي على Property: public bool? IsApproved { get; set; }
+            // 
             CreateMap<AdditionalIssue, AdditionalIssueDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.IsApproved)); // إضافتها هنا
+                .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.IsApproved)); 
 
             CreateMap<CreateBookingDto, Booking>()
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => Enum.Parse<PaymentMethod>(src.PaymentMethod, true)))
@@ -109,11 +109,13 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => BookingStatus.Pending))
                 .ForMember(dest => dest.BookingId, opt => opt.Ignore());
 
-           
+
             CreateMap<AddAdditionalIssueDto, AdditionalIssue>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => AdditionalIssueStatus.Pending)) 
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => AdditionalIssueStatus.Pending))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(dest => dest.BookingId, opt => opt.Ignore());
+                .ForMember(dest => dest.BookingId, opt => opt.Ignore())
+                .ForMember(dest => dest.IsCritical, opt => opt.MapFrom(src => src.IsCritical));
+
 
             // Invoice
             CreateMap<BookingService, InvoiceServiceItemDto>()
