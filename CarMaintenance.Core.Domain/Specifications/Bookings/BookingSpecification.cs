@@ -1,6 +1,5 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Shared.DTOs.Bookings;
-using System.Linq.Expressions;
 
 namespace CarMaintenance.Core.Domain.Specifications.Bookings
 {
@@ -9,7 +8,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
     {
 
         public BookingSpecification(BookingSpecParams specParams)
-            : base(BuildCriteria(specParams))
+            : base(BookingCriteriaBuilder.Build(specParams))
         {
             ApplySorting(specParams.Sort);
             AddIncludes();
@@ -18,28 +17,28 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
         }
 
 
-        public BookingSpecification(string userId, bool isCustomer = true)
-            : base(b => isCustomer ? b.UserId == userId : b.TechnicianId == userId)
-        {
-            AddIncludes();
-            AddOrderByDesc(b => b.ScheduledDate);
-        }
 
         public BookingSpecification(int id) : base(id)
         {
             AddIncludes();
         }
 
-
-        private static Expression<Func<Booking, bool>> BuildCriteria(BookingSpecParams specParams)
+        // Customer 
+        public BookingSpecification(string userId)
+           : base(b => b.UserId == userId)
         {
-            return b =>
-                (string.IsNullOrEmpty(specParams.Status) || b.Status.ToString() == specParams.Status) &&
-                (string.IsNullOrEmpty(specParams.UserId) || b.UserId == specParams.UserId) &&
-                (string.IsNullOrEmpty(specParams.TechnicianId) || b.TechnicianId == specParams.TechnicianId) &&
-                (!specParams.FromDate.HasValue || b.ScheduledDate >= specParams.FromDate.Value) &&
-                (!specParams.ToDate.HasValue || b.ScheduledDate <= specParams.ToDate.Value);
+            AddIncludes();
+            AddOrderByDesc(b => b.ScheduledDate);
         }
+
+        // Technician
+        public BookingSpecification(string technicianId, bool isTechnician)
+            : base(b => b.TechnicianId == technicianId)
+        {
+            AddIncludes();
+            AddOrderByDesc(b => b.ScheduledDate);
+        }
+
 
         private void ApplySorting(string? sort)
         {

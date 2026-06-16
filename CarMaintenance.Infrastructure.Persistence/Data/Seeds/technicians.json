@@ -2,7 +2,7 @@
   {
     "id": "tech-001",
     "userId": "user-tech-001",
-    "specialization": "oil_change,maintenance,brakes,engine",
+    "specialization": "oil_change,brakes,engine,oil_leak",
     "rating": 4.8,
     "isAvailable": true,
     "experienceYears": 8
@@ -26,7 +26,7 @@
   {
     "id": "tech-004",
     "userId": "user-tech-004",
-    "specialization": "maintenance,engine,cooling,oil_change",
+    "specialization": "engine,cooling,oil_change,exhaust",
     "rating": 4.6,
     "isAvailable": true,
     "experienceYears": 6
@@ -74,7 +74,7 @@
   {
     "id": "tech-010",
     "userId": "user-tech-010",
-    "specialization": "oil_change,oil_leak,maintenance,cleaning",
+    "specialization": "oil_change,oil_leak,cleaning,ac",
     "rating": 4.5,
     "isAvailable": true,
     "experienceYears": 6
@@ -90,7 +90,7 @@
   {
     "id": "tech-012",
     "userId": "user-tech-012",
-    "specialization": "cleaning,maintenance,battery",
+    "specialization": "cleaning,battery,electrical",
     "rating": 3.9,
     "isAvailable": true,
     "experienceYears": 2

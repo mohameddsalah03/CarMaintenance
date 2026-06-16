@@ -25,5 +25,14 @@
     "type": "BookingCompleted",
     "actionUrl": "/bookings/3",
     "userId": "cust-003"
+  },
+  {
+    "title": "تم الدفع بنجاح",
+    "message": "تم تأكيد دفع 150 ج.م. للحجز BK-20260101-AA1111. شكراً لاستخدامك Fixora.",
+    "isRead": true,
+    "createdAt": "2026-01-15T11:30:00Z",
+    "type": "PaymentCompleted",
+    "actionUrl": "/bookings/1",
+    "userId": "cust-001"
   }
 ]

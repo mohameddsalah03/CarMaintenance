@@ -26,7 +26,6 @@ namespace CarMaintenance.Core.Service.Services
         private readonly Lazy<IVehicleService> _vehicleService;
         private readonly Lazy<ITechniciansService> _technicianService;
         private readonly Lazy<IBookingService> _bookingService;
-        private readonly Lazy<IAiTechnicianService> _aiTechnicianService;
         private readonly Lazy<IReviewService> _reviewService;
         private readonly Lazy<INotificationService> _notificationService;
         private readonly Lazy<IAdminService> _adminService;
@@ -52,8 +51,6 @@ namespace CarMaintenance.Core.Service.Services
             _authService = new Lazy<IAuthService>(() => _serviceProvider.GetRequiredService<IAuthService>());
 
             _technicianService = new Lazy<ITechniciansService>(() =>_serviceProvider.GetRequiredService<ITechniciansService>());
-
-            _aiTechnicianService = new Lazy<IAiTechnicianService>(() => _serviceProvider.GetRequiredService<IAiTechnicianService>());
             
             _reviewService = new Lazy<IReviewService>(() => _serviceProvider.GetRequiredService<IReviewService>());
 
@@ -70,7 +67,6 @@ namespace CarMaintenance.Core.Service.Services
         public IVehicleService VehicleService => _vehicleService.Value;
         public ITechniciansService TechniciansService => _technicianService.Value;
         public IBookingService BookingService => _bookingService.Value;
-        public IAiTechnicianService AiTechnicianService => _aiTechnicianService.Value;
         public IReviewService ReviewService => _reviewService.Value;
 
         public INotificationService NotificationService => _notificationService.Value;

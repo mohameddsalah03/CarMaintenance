@@ -1,14 +1,12 @@
 ﻿using AutoMapper;
 using CarMaintenance.Core.Domain.Contracts.Persistence;
 using CarMaintenance.Core.Domain.Models.Data;
-using CarMaintenance.Core.Domain.Models.Data.Enums;
 using CarMaintenance.Core.Domain.Specifications.Bookings;
 using CarMaintenance.Core.Domain.Specifications.Reviews;
 using CarMaintenance.Core.Domain.Specifications.Technicians;
 using CarMaintenance.Core.Service.Abstraction.Services.Auth.Email;
 using CarMaintenance.Core.Service.Abstraction.Services.Technicians;
 using CarMaintenance.Shared.DTOs.Technicians;
-using CarMaintenance.Shared.DTOs.Technicians.AI;
 using CarMaintenance.Shared.Exceptions;
 using CarMaintenance.Shared.Settings;
 using Microsoft.AspNetCore.Identity;
@@ -235,58 +233,6 @@ namespace CarMaintenance.Core.Service.Services.Technicians
             return _mapper.Map<TechniciansDto>(technician);
         }
 
-        public async Task<TechnicianStatsDto> GetTechnicianStatsAsync(string id)
-        {
-            var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(id);
-            if (technician is null)
-                throw new NotFoundException(nameof(Technician), id);
-
-            var spec = new BookingByTechnicianSpecification(id);
-            var bookings = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec)).ToList();
-
-            int total = bookings.Count;
-            int completed = bookings.Count(b => b.Status == BookingStatus.Completed);
-
-            return new TechnicianStatsDto
-            {
-                TechnicianId = id,
-                TotalBookings = total,
-                CompletedBookings = completed,
-                SuccessRate = total > 0 ? Math.Round((double)completed / total, 2) : 0
-            };
-        }
-
-        public async Task<TechnicianWorkloadDto> GetTechnicianWorkloadAsync(string id)
-        {
-            var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(id);
-            if (technician is null)
-                throw new NotFoundException(nameof(Technician), id);
-
-            var spec = new BookingByTechnicianActiveSpecification(id);
-            var active = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(spec);
-
-            return new TechnicianWorkloadDto
-            {
-                TechnicianId = id,
-                CurrentWorkload = active.Count()
-            };
-        }
-
-        public async Task<TechnicianRatingDto> GetTechnicianRatingAsync(string id)
-        {
-            var technician = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(id);
-            if (technician is null)
-                throw new NotFoundException(nameof(Technician), id);
-
-            var spec = new ReviewSpecification(id, byTechnician: true);
-            var reviews = (await _unitOfWork.GetRepo<Review, int>().GetAllWithSpecAsync(spec)).ToList();
-
-            return new TechnicianRatingDto
-            {
-                TechnicianId = id,
-                AvgRating = reviews.Any()? Math.Round(reviews.Average(r => r.TechnicianRating), 2): Math.Round((double)technician.Rating, 2),
-                TotalReviews = reviews.Count
-            };
-        }
+      
     }
 }

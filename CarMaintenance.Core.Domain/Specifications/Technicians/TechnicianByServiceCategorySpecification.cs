@@ -2,18 +2,14 @@
 
 namespace CarMaintenance.Core.Domain.Specifications.Technicians
 {
-    public class TechnicianByServiceCategorySpecification : BaseSpecifications<Technician,string>
+    public class TechnicianByServiceCategorySpecification : BaseSpecifications<Technician, string>
     {
-        public TechnicianByServiceCategorySpecification(string serviceCategory, bool onlyAvailable) :
-            base(t =>
+        public TechnicianByServiceCategorySpecification(string serviceCategory, bool onlyAvailable)
+            : base(t =>
                 (!onlyAvailable || t.IsAvailable) &&
                 (
-                    t.Specialization.Contains(serviceCategory) ||
-                    t.Specialization.Contains("general") ||
-                    t.Specialization.Contains("maintenance") ||
-                    (serviceCategory == "تغيير الزيت" && t.Specialization.Contains("oil_change")) ||
-                    (serviceCategory == "الفرامل" && t.Specialization.Contains("brakes")) ||
-                    (serviceCategory == "المحرك" && t.Specialization.Contains("engine"))
+                    t.Specialization.Contains(serviceCategory) || // Direct match بالـ English slug
+                    t.Specialization.Contains("general")
                 )
             )
         {
@@ -26,6 +22,5 @@ namespace CarMaintenance.Core.Domain.Specifications.Technicians
             base.AddIncludes();
             Includes.Add(t => t.User);
         }
-
     }
 }

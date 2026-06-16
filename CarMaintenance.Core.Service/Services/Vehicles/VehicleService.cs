@@ -6,6 +6,7 @@ using CarMaintenance.Core.Domain.Specifications.Vehicles;
 using CarMaintenance.Core.Service.Abstraction.Services.Vehicles;
 using CarMaintenance.Shared.DTOs.Vehicles;
 using CarMaintenance.Shared.Exceptions;
+using CarMaintenance.Shared.Helpers;
 
 namespace CarMaintenance.Core.Service.Services.Vehicles
 {
@@ -38,16 +39,23 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             return mapper.Map<VehicleDto>(vehicle);
         }
 
+      
         public async Task<VehicleDto> AddVehicleAsync(CreateVehicleDto createDto, string userId)
         {
-            var plateSpec = new VehicleByPlateNumberSpecification(createDto.PlateNumber);
+            var cleanedPlate = PlateNumberHelper.CleanAndNormalize(createDto.PlateNumber);
+
+            if (!PlateNumberHelper.IsValidEgyptianPlate(cleanedPlate))
+                throw new BadRequestException( "صيغة لوحة السيارة غير صحيحة. يجب أن تتكون من (1-3 حروف عربية) ثم مسافة ثم (1-4 أرقام).");
+
+            var plateSpec = new VehicleByPlateNumberSpecification(cleanedPlate);
             var existingVehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(plateSpec);
 
             if (existingVehicle is not null)
-                throw new BadRequestException($"رقم اللوحة '{createDto.PlateNumber}' مستخدم بالفعل");
+                throw new BadRequestException($"رقم اللوحة '{cleanedPlate}' مستخدم بالفعل");
 
             var vehicle = mapper.Map<Vehicle>(createDto);
             vehicle.UserId = userId;
+            vehicle.PlateNumber = cleanedPlate; 
 
             await unitOfWork.GetRepo<Vehicle, int>().AddAsync(vehicle);
             await unitOfWork.SaveChangesAsync();
@@ -58,6 +66,7 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             return mapper.Map<VehicleDto>(createdVehicle!);
         }
 
+
         public async Task<VehicleDto> UpdateVehicleAsync(UpdateVehicleDto updateDto, string userId)
         {
             var spec = new VehicleSpecification(updateDto.Id, userId);
@@ -66,13 +75,19 @@ namespace CarMaintenance.Core.Service.Services.Vehicles
             if (vehicle is null)
                 throw new NotFoundException(nameof(Vehicle), updateDto.Id);
 
-            var plateSpec = new VehicleByPlateNumberSpecification(updateDto.PlateNumber, updateDto.Id);
+            var cleanedPlate = PlateNumberHelper.CleanAndNormalize(updateDto.PlateNumber);
+
+            if (!PlateNumberHelper.IsValidEgyptianPlate(cleanedPlate))
+                throw new BadRequestException("صيغة لوحة السيارة غير صحيحة. يجب أن تتكون من (1-3 حروف عربية) ثم مسافة ثم (1-4 أرقام).");
+
+            var plateSpec = new VehicleByPlateNumberSpecification(cleanedPlate,updateDto.Id);
             var existingPlateVehicle = await unitOfWork.GetRepo<Vehicle, int>().GetWithSpecAsync(plateSpec);
 
             if (existingPlateVehicle is not null)
-                throw new BadRequestException($"رقم اللوحة '{updateDto.PlateNumber}' مستخدم بالفعل");
+                throw new BadRequestException($"رقم اللوحة '{cleanedPlate}' مستخدم بالفعل");
 
             mapper.Map(updateDto, vehicle);
+            vehicle.PlateNumber = cleanedPlate;
 
             unitOfWork.GetRepo<Vehicle, int>().Update(vehicle);
             await unitOfWork.SaveChangesAsync();

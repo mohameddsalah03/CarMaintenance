@@ -105,6 +105,11 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
         public async Task<ActionResult<Pagination<BookingDto>>> GetAllBookings([FromQuery] BookingSpecParams specParams)
             => Ok(await _serviceManager.BookingService.GetAllBookingsAsync(specParams));
 
+        [HttpGet("today")]
+        [Authorize(Roles = "Admin,Technician")]
+        public async Task<ActionResult<Pagination<BookingDto>>> GetTodayBookings([FromQuery] BookingSpecParams specParams)
+            => Ok( await _serviceManager.BookingService.GetTodayBookingsAsync(specParams));
+
         [Authorize(Roles = "Admin")]
         [HttpPost("{id:int}/assign-technician")]
         public async Task<ActionResult<BookingDto>> AssignTechnician(int id)

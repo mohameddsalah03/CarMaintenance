@@ -1,24 +1,16 @@
 ﻿using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Shared.DTOs.Bookings;
-using System.Linq.Expressions;
 
 namespace CarMaintenance.Core.Domain.Specifications.Bookings
 {
     public class BookingWithFiltrationForCountSpecification : BaseSpecifications<Booking, int>
     {
         public BookingWithFiltrationForCountSpecification(BookingSpecParams specParams)
-            : base(BuildCriteria(specParams))
+            : base(BookingCriteriaBuilder.Build(specParams))
         {
+            // No includes عشان الـ COUNT query متحملش بيانات زيادة
         }
 
-        private static Expression<Func<Booking, bool>> BuildCriteria(BookingSpecParams specParams)
-        {
-            return b =>
-                (string.IsNullOrEmpty(specParams.Status) || b.Status.ToString() == specParams.Status) &&
-                (string.IsNullOrEmpty(specParams.UserId) || b.UserId == specParams.UserId) &&
-                (string.IsNullOrEmpty(specParams.TechnicianId) || b.TechnicianId == specParams.TechnicianId) &&
-                (!specParams.FromDate.HasValue || b.ScheduledDate >= specParams.FromDate.Value) &&
-                (!specParams.ToDate.HasValue || b.ScheduledDate <= specParams.ToDate.Value);
-        }
+
     }
 }

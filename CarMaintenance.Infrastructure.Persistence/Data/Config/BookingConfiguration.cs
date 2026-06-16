@@ -52,12 +52,12 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
                     status => Enum.Parse<PaymentStatus>(status, true))
                 .IsRequired();
 
+            // // // 
             builder.Property(b => b.PaymentMethod)
-                .HasColumnType("nvarchar(50)")
-                .HasConversion(
-                    method => method.ToString(),
-                    method => Enum.Parse<PaymentMethod>(method, true))
-                .IsRequired();
+                   .HasConversion<string?>()
+                   .HasMaxLength(50)
+                   .IsRequired(false);
+
 
             builder.Property(b => b.UserId)
                 .HasMaxLength(450)

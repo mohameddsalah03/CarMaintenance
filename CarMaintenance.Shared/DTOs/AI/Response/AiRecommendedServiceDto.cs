@@ -6,5 +6,6 @@
         public int ServiceId { get; set; }
         public string ServiceName { get; set; } = null!;
         public double Confidence { get; set; }
+        public string ConfidenceSource { get; set; } = "model";
     }
 }

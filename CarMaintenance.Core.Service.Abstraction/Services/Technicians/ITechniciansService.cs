@@ -1,5 +1,4 @@
 ﻿using CarMaintenance.Shared.DTOs.Technicians;
-using CarMaintenance.Shared.DTOs.Technicians.AI;
 
 namespace CarMaintenance.Core.Service.Abstraction.Services.Technicians
 {
@@ -14,9 +13,6 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Technicians
         Task<TechniciansDto> ToggleAvailabilityAsync(string id);
 
 
-        // AI
-        Task<TechnicianStatsDto> GetTechnicianStatsAsync(string id);
-        Task<TechnicianWorkloadDto> GetTechnicianWorkloadAsync(string id);
-        Task<TechnicianRatingDto> GetTechnicianRatingAsync(string id);
+      
     }
 }

@@ -5,6 +5,7 @@
     "estimatedCost": 200.0,
     "estimatedDurationMinutes": 45,
     "status": "Pending",
+    "isCritical": false,
     "createdAt": "2026-05-01T12:30:00Z",
     "bookingId": 5
   }

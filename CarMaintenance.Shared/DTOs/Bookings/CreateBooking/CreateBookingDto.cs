@@ -20,8 +20,8 @@ namespace CarMaintenance.Shared.DTOs.Bookings.CreateBooking
         [MinLength(1, ErrorMessage = "يجب اختيار خدمة واحدة على الأقل")]
         public List<BookingServiceDto> Services { get; set; } = new();
 
-        [Required(ErrorMessage = "طريقة الدفع مطلوبة")]
-        public string PaymentMethod { get; set; } = null!; // "Cash" or "CreditCard"
+        //[Required(ErrorMessage = "طريقة الدفع مطلوبة")]
+        //public string PaymentMethod { get; set; } = null!; // "Cash" or "CreditCard"
 
 
     }

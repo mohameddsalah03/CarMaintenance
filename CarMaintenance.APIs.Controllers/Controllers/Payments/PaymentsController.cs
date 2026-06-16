@@ -12,8 +12,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Payments
         // POST: /api/payments/initiate
         [Authorize(Roles = "Customer")]
         [HttpPost("initiate")]
-        public async Task<ActionResult<PaymentInitiatedDto>> InitiatePayment(
-            [FromBody] InitiatePaymentDto dto)
+        public async Task<ActionResult<PaymentInitiatedDto>> InitiatePayment([FromBody] InitiatePaymentDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var result = await _paymentService.InitiatePaymentAsync(dto, userId);
