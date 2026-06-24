@@ -205,30 +205,39 @@ namespace CarMaintenance.Core.Service.Services.Auth
                 throw new BadRequestException("Invalid or expired token");
             }
         }
-
         public async Task<UserDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
         {
-            // 1. Parse the expired Access Token to extract the User Email
-            var tokenHandler = new JwtSecurityTokenHandler(); 
-            var principal = tokenHandler.ValidateToken(refreshTokenDto.Token,new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key)),
-                    ValidateIssuer = true,
-                    ValidIssuer = _jwtSettings.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = _jwtSettings.Audience,
-                    ValidateLifetime = false,   
-                    ClockSkew = TimeSpan.Zero
-                },
-             out SecurityToken validatedToken);
+            var tokenHandler = new JwtSecurityTokenHandler();
 
-            // 2. extract email from claims
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key)),
+                ValidateIssuer = false,   
+                ValidateAudience = false,
+                ValidateLifetime = false,   
+                ClockSkew = TimeSpan.Zero
+            };
+
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = tokenHandler.ValidateToken(
+                    refreshTokenDto.Token, tokenValidationParameters, out var validatedToken);
+
+                if (validatedToken is not JwtSecurityToken jwt ||
+                    !jwt.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                    throw new UnauthorizedException("Invalid token");
+            }
+            catch (SecurityTokenException)
+            {
+                throw new UnauthorizedException("Invalid token");
+            }
+
             var userEmail = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             if (string.IsNullOrEmpty(userEmail))
                 throw new UnauthorizedException("Invalid token");
 
-            // 3. Retrieve User from Database
             var user = await _userManager.FindByEmailAsync(userEmail);
             if (user is null)
                 throw new UnauthorizedException("Invalid token");

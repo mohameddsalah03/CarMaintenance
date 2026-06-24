@@ -13,6 +13,9 @@ namespace CarMaintenance.APIs
     {
         public static async Task Main(string[] args)
         {
+
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             var builder = WebApplication.CreateBuilder(args);
 
             #region Configure Services

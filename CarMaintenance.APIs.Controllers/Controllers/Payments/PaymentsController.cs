@@ -20,7 +20,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Payments
         }
 
         // POST: /api/payments/callback
-        // Paymob calls this — must be anonymous and always return 200
         [AllowAnonymous]
         [HttpPost("callback")]
         public async Task<ActionResult> HandleCallback()

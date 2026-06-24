@@ -8,7 +8,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Bookings
         public BookingWithFiltrationForCountSpecification(BookingSpecParams specParams)
             : base(BookingCriteriaBuilder.Build(specParams))
         {
-            // No includes عشان الـ COUNT query متحملش بيانات زيادة
+
         }
 
 

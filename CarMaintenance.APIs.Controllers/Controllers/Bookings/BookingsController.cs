@@ -78,20 +78,10 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Bookings
             return Ok(invoice);
         }
 
-        //[Authorize(Roles = "Customer")]
-        //[HttpGet("available-slots")]
-        //public async Task<ActionResult<AvailableSlotsResponseDto>> GetAvailableSlots(
-        //                [FromQuery] List<int> serviceIds,
-        //                [FromQuery] DateTime? preferredDate)
-        //{
-        //    var result = await _serviceManager.BookingService.GetAvailableSlotsAsync(serviceIds, preferredDate);
-        //    return Ok(result);
-        //}
         [Authorize(Roles = "Customer")]
         [HttpGet("available-slots")]
         public async Task<ActionResult<AvailableSlotsResponseDto>> GetAvailableSlots([FromQuery] List<int> serviceIds) // تم حذف preferredDate
         {
-            // بننادي الخدمة وبنعتمد على تاريخ اليوم تلقائياً داخل الـ Service
             var result = await _serviceManager.BookingService.GetAvailableSlotsAsync(serviceIds);
             return Ok(result);
         }

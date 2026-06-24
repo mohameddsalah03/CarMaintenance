@@ -18,6 +18,10 @@ namespace CarMaintenance.Infrastructure
             services.Configure<PaymobSettings>(configuration.GetSection("PaymobSettings"));
             services.AddHttpClient<IPaymobService, PaymobService>();
 
+            // 
+            services.AddHostedService<AiWarmUpService>();
+            services.AddHttpClient();
+
             return services;
         }
     }

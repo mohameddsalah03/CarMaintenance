@@ -52,25 +52,27 @@ namespace CarMaintenance.Core.Service.Services.Payments
                 throw new BadRequestException(reason);
             }
 
-            // validate on paymentMethod 
+            // validate on paymentMethod  // convert string to enum 
             if (!Enum.TryParse<PaymentMethod>(dto.PaymentMethod, true, out var method))
                 throw new BadRequestException($"طريقة دفع غير صحيحة: '{dto.PaymentMethod}'. القيم المقبولة: Cash, CreditCard");
 
-            // 6️ إعادة حساب التكلفة (Defensive Guard)
+
             var correctCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0)
-                            + booking.AdditionalIssues
-                                .Where(ai => ai.Status == AdditionalIssueStatus.Approved)
-                                .Sum(ai => ai.EstimatedCost);
+                            + booking.AdditionalIssues.Where(ai => ai.Status == AdditionalIssueStatus.Approved)
+                                                      .Sum(ai => ai.EstimatedCost);
 
             if (correctCost > 0 && booking.TotalCost != correctCost)
                 booking.TotalCost = correctCost;
 
             booking.PaymentMethod = method;
 
-            // Cash flow 
+            // 7️ Cash flow 
             if (method == PaymentMethod.Cash)
             {
                 booking.PaymentStatus = PaymentStatus.Paid;
+                booking.PaidAt = DateTime.UtcNow;                  
+                booking.PaymentProcessedByUserId = userId;         
+
                 _unitOfWork.GetRepo<Booking, int>().Update(booking);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -84,7 +86,7 @@ namespace CarMaintenance.Core.Service.Services.Payments
                 return new PaymentInitiatedDto
                 {
                     IFrameUrl = string.Empty,
-                    PaymentToken = "cash"
+                    PaymentToken = "cash" // paymob معناها مفيش  
                 };
             }
 
@@ -100,8 +102,7 @@ namespace CarMaintenance.Core.Service.Services.Payments
             PaymobCallbackDto? callback;
             try
             {
-                callback = JsonSerializer.Deserialize<PaymobCallbackDto>(rawBody,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                callback = JsonSerializer.Deserialize<PaymobCallbackDto>(rawBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
             catch
             {
@@ -119,13 +120,12 @@ namespace CarMaintenance.Core.Service.Services.Payments
                 return;
 
             var bookingNumber = merchantOrderId.Replace("FIXORA-", "");
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingByNumberSpecification(bookingNumber));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingByNumberSpecification(bookingNumber));
 
             if (booking == null)
                 return;
 
-            // Idempotency — لو متدفع بالفعل، تجاهل
+            // Idempotency
             if (booking.PaymentStatus == PaymentStatus.Paid)
                 return;
 
@@ -135,6 +135,9 @@ namespace CarMaintenance.Core.Service.Services.Payments
             if (isSuccess)
             {
                 booking.PaymentStatus = PaymentStatus.Paid;
+                booking.PaymobTransactionId = callback.Obj.Id.ToString();   
+                booking.PaidAt = DateTime.UtcNow;                           
+                                                                            
             }
             else if (isFailure)
             {
@@ -142,13 +145,13 @@ namespace CarMaintenance.Core.Service.Services.Payments
             }
             else
             {
-                return;  // Pending — استنى تأكيد لاحق
+                return;  // Pending 
             }
 
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
 
-            // إخطار العميل بنتيجة الدفع
+            
             if (isSuccess)
             {
                 await _notificationService.SendAsync(

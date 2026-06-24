@@ -37,12 +37,7 @@ namespace CarMaintenance.Shared.DTOs.Bookings.ReturnDto
         // Services
         public List<BookingServiceDetailsDto> BookingServiceDetailsDtos { get; set; } = new();
 
-        /// <summary>
-        /// Available time slots for the assigned technician.
-        /// Populated on CreateBooking response and BookingDetails so the customer
-        /// can immediately see when to bring in the car.
-        /// Null if no technician has been assigned yet.
-        /// </summary>
+        
         public TechnicianAvailableSlotsDto? TechnicianAvailableSlots { get; set; }
     }
 }

@@ -52,11 +52,26 @@ namespace CarMaintenance.Infrastructure.Persistence.Contexts.Config
                     status => Enum.Parse<PaymentStatus>(status, true))
                 .IsRequired();
 
-            // // // 
+            // /
             builder.Property(b => b.PaymentMethod)
                    .HasConversion<string?>()
                    .HasMaxLength(50)
                    .IsRequired(false);
+            
+            builder.Property(b => b.PaymobTransactionId)
+                   .HasMaxLength(100)
+                   .IsRequired(false);
+
+            builder.HasIndex(b => b.PaymobTransactionId);
+
+            builder.Property(b => b.PaidAt)
+                   .IsRequired(false);
+
+            builder.HasOne(b => b.PaymentProcessedBy)
+        .WithMany()
+        .HasForeignKey(b => b.PaymentProcessedByUserId)
+        .OnDelete(DeleteBehavior.Restrict)   // ✏️ كان SetNull → Restrict
+        .IsRequired(false);
 
 
             builder.Property(b => b.UserId)

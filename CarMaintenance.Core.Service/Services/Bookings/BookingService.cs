@@ -166,7 +166,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return result;
         }
 
-        // ── GET /api/Bookings/available-slots?serviceIds=1&serviceIds=2 ───────
         public async Task<AvailableSlotsResponseDto> GetAvailableSlotsAsync(List<int> serviceIds)
         {
             if (!serviceIds.Any())
@@ -186,7 +185,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var requiredSpecs = MapCategoriesToSpecs(services.Select(s => s.Category));
             var totalDuration = services.Sum(s => s.EstimatedDurationMinutes);
             var now = DateTime.UtcNow;
-            //var fromDate = now.Date.AddDays(1);  // earliest available slot = tomorrow
             var fromDate = now.Date;  // ← من AddDays(1) إلى Date فقط
 
 
@@ -508,9 +506,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (!string.IsNullOrWhiteSpace(statusDto.TechnicianReport))
                 booking.TechnicianReport = statusDto.TechnicianReport;
 
-            // ✏️ NOTE: We do NOT set PaymentStatus = Paid here anymore.
-            // Payment is now triggered separately via PaymentService.InitiatePaymentAsync
-            // after the booking is marked Completed.
             if (newStatus == BookingStatus.Completed)
             {
                 var veh = await _unitOfWork.GetRepo<Vehicle, int>().GetByIdAsync(booking.VehicleId);
@@ -551,7 +546,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     title: totalCount > 1 ? $"تم إكمال خدمة {completedCount}/{totalCount}" : "تم إكمال الحجز",
                     message: $"انتهت صيانة سيارتك للحجز {booking.BookingNumber}. يمكنك الآن إتمام الدفع.",
                     type: NotificationType.BookingCompleted,
-                    actionUrl: $"/bookings/{booking.Id}/pay");   // ✏️ Direct to payment screen
+                    actionUrl: $"/bookings/{booking.Id}/pay");   //
             }
 
             if (newStatus == BookingStatus.InProgress)
@@ -800,7 +795,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
 
         #region Static helpers
-
 
         // Normalises service categories (English slugs) to distinct lowercase keys.
         // e.g. "Oil_Change", " brakes " → ["oil_change", "brakes"]

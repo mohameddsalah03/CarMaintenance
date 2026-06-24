@@ -7,6 +7,6 @@ namespace CarMaintenance.Shared.DTOs.Payment
         public int BookingId { get; set; }
 
         [Required(ErrorMessage = "طريقة الدفع مطلوبة")]
-        public string PaymentMethod { get; set; } = "Cash"; // "Cash" or "CreditCard"
+        public string PaymentMethod { get; set; } = "Cash"; 
     }
 }

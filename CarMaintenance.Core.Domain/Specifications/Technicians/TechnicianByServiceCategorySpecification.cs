@@ -8,8 +8,7 @@ namespace CarMaintenance.Core.Domain.Specifications.Technicians
             : base(t =>
                 (!onlyAvailable || t.IsAvailable) &&
                 (
-                    t.Specialization.Contains(serviceCategory) || // Direct match بالـ English slug
-                    t.Specialization.Contains("general")
+                    t.Specialization.Contains(serviceCategory) || t.Specialization.Contains("general")
                 )
             )
         {
