@@ -68,8 +68,7 @@ namespace CarMaintenance.Infrastructure.PaymobServices
                 }
             };
 
-            var response = await PostAsync<PaymobPaymentKeyResponse>(
-                "/acceptance/payment_keys", body);
+            var response = await PostAsync<PaymobPaymentKeyResponse>( "/acceptance/payment_keys", body);
 
             if (string.IsNullOrEmpty(response?.Token))
                 throw new BadRequestException("Paymob: فشل الحصول على Payment Key");
@@ -79,8 +78,7 @@ namespace CarMaintenance.Infrastructure.PaymobServices
 
         public string BuildIFrameUrl(string paymentToken)
         {
-            return $"https://accept.paymob.com/api/acceptance/iframes/" + 
-                $"{_settings.IFrameId}?payment_token={paymentToken}";
+            return $"https://accept.paymob.com/api/acceptance/iframes/" +  $"{_settings.IFrameId}?payment_token={paymentToken}";
         }
 
         public bool VerifyHmac(PaymobTransactionObj obj, string receivedHmac)
@@ -112,8 +110,7 @@ namespace CarMaintenance.Infrastructure.PaymobServices
                     obj.Success.ToString().ToLower()
                 );
 
-                using var hmac = new HMACSHA512(
-                    Encoding.UTF8.GetBytes(_settings.HmacSecret));
+                using var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(_settings.HmacSecret));
 
                 var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
                 var computed = Convert.ToHexString(hash).ToLower();

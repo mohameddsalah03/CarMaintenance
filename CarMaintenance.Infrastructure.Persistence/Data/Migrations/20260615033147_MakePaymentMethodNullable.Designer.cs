@@ -4,6 +4,7 @@ using CarMaintenance.Infrastructure.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 {
     [DbContext(typeof(CarDbContext))]
-    partial class CarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615033147_MakePaymentMethodNullable")]
+    partial class MakePaymentMethodNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,23 +169,13 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar");
 
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("PaymentMethod")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("PaymentProcessedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("PaymentStatus")
                         .IsRequired()
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("PaymobTransactionId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("ScheduledDate")
                         .HasColumnType("datetime2");
@@ -214,10 +207,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 
                     b.HasIndex("BookingNumber")
                         .IsUnique();
-
-                    b.HasIndex("PaymentProcessedByUserId");
-
-                    b.HasIndex("PaymobTransactionId");
 
                     b.HasIndex("TechnicianId");
 
@@ -535,11 +524,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
 
             modelBuilder.Entity("CarMaintenance.Core.Domain.Models.Data.Booking", b =>
                 {
-                    b.HasOne("CarMaintenance.Core.Domain.Models.Data.ApplicationUser", "PaymentProcessedBy")
-                        .WithMany()
-                        .HasForeignKey("PaymentProcessedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("CarMaintenance.Core.Domain.Models.Data.Technician", "AssignedTechnician")
                         .WithMany("AssignedBookings")
                         .HasForeignKey("TechnicianId")
@@ -558,8 +542,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("AssignedTechnician");
-
-                    b.Navigation("PaymentProcessedBy");
 
                     b.Navigation("User");
 

@@ -30,6 +30,7 @@ namespace CarMaintenance.Core.Service.Abstraction.Services.Bookings
         //Admin 
         //Task CancelBookingByAdminAsync(int id);
         Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams);
+        Task<Pagination<BookingDto>> GetTodayBookingsAsync(BookingSpecParams specParams);
         Task<BookingDto> AssignTechnicianAsync(int bookingId);
 
     }

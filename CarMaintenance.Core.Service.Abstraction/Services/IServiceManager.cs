@@ -17,10 +17,8 @@ namespace CarMaintenance.Core.Service.Abstraction.Services
         IVehicleService VehicleService { get; }
         ITechniciansService TechniciansService { get; }
         IBookingService BookingService { get; }
-        IAiTechnicianService AiTechnicianService { get; }
         IAiDiagnosisService AiDiagnosisService { get; }
         IReviewService ReviewService { get; }
-
         INotificationService NotificationService { get; }
         IAdminService AdminService { get; }
         IPaymentService PaymentService { get; }

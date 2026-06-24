@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace CarMaintenance.APIs.Controllers.Controllers.Services
+namespace CarMaintenance.APIs.Controllers.Controllers.Serivces
 {
     public class ServicesController(IServiceManager serviceManager) : BaseApiController
     {

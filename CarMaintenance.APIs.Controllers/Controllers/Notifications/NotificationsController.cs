@@ -21,7 +21,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Notifications
             return Ok(result);
         }
 
-        //  X-Unread-Count header added for frontend polling support
         [HttpGet("unread-count")]
         public async Task<ActionResult<object>> GetUnreadCount()
         {

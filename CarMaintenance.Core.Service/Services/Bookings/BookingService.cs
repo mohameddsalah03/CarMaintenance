@@ -23,181 +23,25 @@ namespace CarMaintenance.Core.Service.Services.Bookings
     internal class BookingService(
         IUnitOfWork _unitOfWork,
         IMapper _mapper,
-        //IAiTechnicianService _aiTechnicianService,  // retained — not used for selection
         INotificationService _notificationService,
         UserManager<ApplicationUser> _userManager
     ) : IBookingService
     {
-        // ── Working-day constants ─────────────────────────────────────────────
-        private const int WorkStartMinutes = 9 * 60;  // 09:00
-        private const int WorkEndMinutes = 17 * 60;  // 17:00
+        // Working-day constants
+        private const int WorkStartMinutes = 9 * 60;   // 09:00
+        private const int WorkEndMinutes = 17 * 60;    // 17:00
         private const int SlotStepMinutes = 60;        // advance cursor by 1 h per slot
-        private const int MinSlotWidth = 30;        // min. gap that counts as "free"
+        private const int MinSlotWidth = 30;           // min. gap that counts as "free"
         private const int MaxDailyMinutes = 480;       // 8 h per technician per day
         private const int MaxSlotsToReturn = 6;
         private const int MaxDaysLookAhead = 7;
-        private const double MinCoverage = 0.5;       // partial-match threshold
+        private const double MinCoverage = 0.5;        // partial-match threshold
 
-        // ── Category (Arabic) → Specialization (English) ─────────────────────
-        private static readonly Dictionary<string, string> CategoryToSpec =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                ["تغيير الزيت"] = "oil_change",
-                ["تسريب الزيت"] = "oil_leak",
-                ["الفرامل"] = "brakes",
-                ["الإطارات"] = "tires",
-                ["ضبط الزوايا"] = "alignment_balancing",
-                ["نظام التعليق"] = "suspension",
-                ["نظام التوجيه"] = "steering",
-                ["ناقل الحركة"] = "transmission",
-                ["المكيف"] = "ac",
-                ["نظام التبريد"] = "cooling",
-                ["المحرك"] = "engine",
-                ["نظام العادم"] = "exhaust",
-                ["بدء التشغيل"] = "starting",
-                ["كهرباء السيارة"] = "electrical",
-                ["البطارية"] = "battery",
-                ["التنظيف"] = "cleaning",
-                ["الصيانة"] = "maintenance",
-                ["الصيانة العامة"] = "maintenance",
-            };
+        
 
-        // ════════════════════════════════════════════════════════════════════
-        #region Static helpers
-
-        /// <summary>Arabic categories → distinct English spec keys.</summary>
-        private static List<string> MapCategoriesToSpecs(IEnumerable<string?> categories)
-            => categories
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Select(c => CategoryToSpec.TryGetValue(c!.Trim(), out var v)
-                    ? v : c!.Trim().ToLower())
-                .Distinct()
-                .ToList();
-
-        /// <summary>
-        /// Normalises a comma-separated Specialization field that may contain
-        /// Arabic or English tokens into lowercase English spec keys.
-        /// "كهرباء السيارة,battery" → ["electrical","battery"]
-        /// </summary>
-        private static List<string> NormalizeTechSpecs(string specialization)
-            => specialization
-                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => CategoryToSpec.TryGetValue(s, out var v) ? v : s.ToLower())
-                .Distinct()
-                .ToList();
-
-        /// <summary>
-        /// Returns (isFullMatch, coverageRatio, coveredKeys, uncoveredKeys).
-        /// isFullMatch = true when ratio == 1.0 (all required specs covered).
-        /// </summary>
-        private static (bool full, double ratio, List<string> covered, List<string> uncovered)
-            ComputeCoverage(List<string> techSpecs, List<string> required)
-        {
-            if (!required.Any()) return (true, 1.0, new(), new());
-            var covered = required.Where(r => techSpecs.Contains(r)).ToList();
-            var uncovered = required.Except(covered).ToList();
-            double ratio = (double)covered.Count / required.Count;
-            return (ratio >= 1.0, ratio, covered, uncovered);
-        }
-
-        /// <summary>
-        /// Core slot-building algorithm — used by both GetAvailableSlots and
-        /// the per-technician slot helper after booking creation.
-        ///
-        /// Rules enforced per slot:
-        ///  1. Within work hours (WorkStartMinutes … WorkEndMinutes)
-        ///  2. Strictly in the future (after <paramref name="now"/>)
-        ///  3. At least <paramref name="requiredMinutes"/> wide before the next
-        ///     booked interval (capacity check)
-        ///  4. No overlap with any existing booking interval
-        ///     Overlap = cursor &lt; interval.End AND cursor + required &gt; interval.Start
-        /// </summary>
-        private static List<AvailableSlotDto> BuildSlots(
-            IReadOnlyList<Booking> activeBookings,
-            DateTime fromDate,
-            int requiredMinutes,
-            DateTime now)
-        {
-            var today = now.Date;
-            var result = new List<AvailableSlotDto>();
-
-            for (int d = 0; d < MaxDaysLookAhead && result.Count < MaxSlotsToReturn; d++)
-            {
-                var date = fromDate.Date.AddDays(d);
-
-                // Build booked intervals for this day (minutes from midnight)
-                // End = start + max(duration, MinSlotWidth) to handle zero-duration edge case
-                var intervals = activeBookings
-                    .Where(b => b.ScheduledDate.Date == date)
-                    .Select(b =>
-                    {
-                        int s = b.ScheduledDate.Hour * 60 + b.ScheduledDate.Minute;
-                        int dur = b.BookingServices.Any()
-                                  ? b.BookingServices.Sum(bs => bs.Duration)
-                                  : MinSlotWidth;
-                        return (Start: s, End: s + Math.Max(dur, MinSlotWidth));
-                    })
-                    .OrderBy(i => i.Start)
-                    .ToList();
-
-                int cursor = WorkStartMinutes;
-
-                while (cursor + requiredMinutes <= WorkEndMinutes &&
-                       result.Count < MaxSlotsToReturn)
-                {
-                    var slotDateTime = date.AddMinutes(cursor);
-
-                    // Must be in the future
-                    if (slotDateTime <= now)
-                    {
-                        cursor += SlotStepMinutes;
-                        continue;
-                    }
-
-                    // Overlap check: any interval where [cursor, cursor+required) intersects [start, end)
-                    var blocking = intervals
-                        .Where(i => cursor < i.End && cursor + requiredMinutes > i.Start)
-                        .ToList();
-
-                    if (!blocking.Any())
-                    {
-                        result.Add(new AvailableSlotDto
-                        {
-                            SlotDateTime = slotDateTime,
-                            Label = FormatSlotLabel(slotDateTime, today)
-                        });
-                        cursor += SlotStepMinutes;
-                    }
-                    else
-                    {
-                        // Jump past the last blocking interval end
-                        cursor = blocking.Max(i => i.End);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        private static string FormatSlotLabel(DateTime slot, DateTime today)
-        {
-            var day = slot.Date == today.AddDays(1) ? "غداً" :
-                      slot.Date == today.AddDays(2) ? "بعد غد" :
-                      slot.Date.ToString("dd/MM");
-            var h12 = slot.Hour > 12 ? slot.Hour - 12 : slot.Hour == 0 ? 12 : slot.Hour;
-            return $"{day} {h12}:00 {(slot.Hour < 12 ? "ص" : "م")}";
-        }
-
-        private static string GenerateBookingNumber()
-            => $"BK-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
-
-        #endregion
-
-        // ════════════════════════════════════════════════════════════════════
         #region Customer
 
-        public async Task<Pagination<BookingDto>> GetMyBookingsAsync(
-            BookingSpecParams specParams, string userId)
+        public async Task<Pagination<BookingDto>> GetMyBookingsAsync(BookingSpecParams specParams, string userId)
         {
             specParams.UserId = userId;
             var spec = new BookingSpecification(specParams);
@@ -212,8 +56,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         public async Task<BookingDetailsDto> GetBookingDetailsAsync(int id, string userId)
         {
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(id));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(id));
 
             if (booking == null) throw new NotFoundException(nameof(Booking), id);
             if (booking.UserId != userId)
@@ -221,8 +64,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             var result = _mapper.Map<BookingDetailsDto>(booking);
             if (!string.IsNullOrEmpty(booking.TechnicianId))
-                result.TechnicianAvailableSlots =
-                    await BuildTechnicianSlotsAsync(booking.TechnicianId);
+                result.TechnicianAvailableSlots = await BuildTechnicianSlotsAsync(booking.TechnicianId);
 
             return result;
         }
@@ -263,22 +105,17 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 services.Add(svc);
             }
 
-            // 6. Payment method
-            if (!Enum.TryParse<PaymentMethod>(dto.PaymentMethod, true, out var paymentMethod))
-                throw new BadRequestException(
-                    $"طريقة دفع غير صحيحة: '{dto.PaymentMethod}'. القيم المقبولة: Cash, CreditCard");
-
-            // 7. Persist booking
+            // 6. Persist booking
             var booking = new Booking
             {
                 BookingNumber = GenerateBookingNumber(),
                 UserId = userId,
                 VehicleId = dto.VehicleId,
-                ScheduledDate = dto.ScheduledDate,
+                ScheduledDate = dto.ScheduledDate.Kind == DateTimeKind.Utc? dto.ScheduledDate: dto.ScheduledDate.ToUniversalTime(),
                 Description = dto.Description,
                 Status = BookingStatus.Pending,
                 TotalCost = services.Sum(s => s.BasePrice),
-                PaymentMethod = paymentMethod,
+                PaymentMethod = null,                       // Set on payment, not creation
                 PaymentStatus = PaymentStatus.Pending,
                 TechnicianId = null
             };
@@ -299,12 +136,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             }
             await _unitOfWork.SaveChangesAsync();
 
-            // 8. Auto-assign — never throws; failure only sends admin notification
+            // 7. Auto-assign — never throws; failure only sends admin notification
             await TryAutoAssignAsync(booking, services);
 
-            // 9. Re-query with all nav props for the response
-            var created = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(booking.Id));
+            // 8. Re-query with all nav props for the response
+            var created = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(booking.Id));
 
             await _notificationService.SendAsync(
                 userId: userId,
@@ -316,8 +152,8 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             await NotifyAdminsAsync(
                 title: $"حجز جديد #{booking.BookingNumber}",
                 message: $"العميل {created!.User.DisplayName} — " +
-                           $"{created.Vehicle.Brand} {created.Vehicle.Model} — " +
-                           $"{booking.TotalCost} ج.م.",
+                         $"{created.Vehicle.Brand} {created.Vehicle.Model} — " +
+                         $"{booking.TotalCost} ج.م.",
                 type: NotificationType.BookingCreated,
                 actionUrl: $"/admin/bookings/{booking.Id}");
 
@@ -330,7 +166,6 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return result;
         }
 
-        // ── GET /api/Bookings/available-slots?serviceIds=1&serviceIds=2 ───────
         public async Task<AvailableSlotsResponseDto> GetAvailableSlotsAsync(List<int> serviceIds)
         {
             if (!serviceIds.Any())
@@ -340,8 +175,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var services = new List<Domain.Models.Data.Service>();
             foreach (var id in serviceIds.Distinct())
             {
-                var svc = await _unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                    .GetByIdAsync(id);
+                var svc = await _unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(id);
                 if (svc is not null) services.Add(svc);
             }
 
@@ -351,11 +185,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             var requiredSpecs = MapCategoriesToSpecs(services.Select(s => s.Category));
             var totalDuration = services.Sum(s => s.EstimatedDurationMinutes);
             var now = DateTime.UtcNow;
-            var fromDate = now.Date.AddDays(1);  // earliest available slot = tomorrow
+            var fromDate = now.Date;  // ← من AddDays(1) إلى Date فقط
+
 
             // Load ALL available technicians ONCE
-            var allAvailable = (await _unitOfWork.GetRepo<Technician, string>()
-                .GetAllWithSpecAsync(new TechnicianSpecification(isAvailable: true))).ToList();
+            var allAvailable = (await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(new TechnicianSpecification(isAvailable: true))).ToList();
 
             var results = new List<TechnicianWithSlotsDto>();
 
@@ -368,12 +202,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
                 // Load this technician's active bookings ONCE (for both capacity + slots)
                 var activeTechSpec = new BookingByTechnicianActiveSpecification(tech.Id);
-                var activeTechBookings = (await _unitOfWork.GetRepo<Booking, int>()
-                    .GetAllWithSpecAsync(activeTechSpec)).ToList();
-
-                // Capacity check: does any day in the next 7 days have enough room?
-                // We check against fromDate day — the slot builder will handle per-day logic.
-                // (A tech might be full on day 1 but free on day 2 — let BuildSlots decide)
+                var activeTechBookings = (await _unitOfWork.GetRepo<Booking, int>() .GetAllWithSpecAsync(activeTechSpec)).ToList();
 
                 var slots = BuildSlots(activeTechBookings, fromDate, totalDuration, now);
 
@@ -410,8 +239,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         public async Task CancelBookingAsync(int id, string userId)
         {
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(id));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(id));
 
             if (booking == null) throw new NotFoundException(nameof(Booking), id);
             if (booking.UserId != userId)
@@ -423,8 +251,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (booking.Status == BookingStatus.InProgress)
                 throw new BadRequestException("لا يمكن إلغاء الحجز أثناء تنفيذه");
 
-            if (!string.IsNullOrEmpty(booking.TechnicianId) &&
-                booking.Status == BookingStatus.WaitingClientApproval)
+            if (!string.IsNullOrEmpty(booking.TechnicianId) && booking.Status == BookingStatus.WaitingClientApproval)
                 await TryRestoreAvailabilityAsync(booking.TechnicianId, booking.Id);
 
             booking.Status = BookingStatus.Cancelled;
@@ -446,16 +273,13 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 actionUrl: $"/admin/bookings/{booking.Id}");
         }
 
-        public async Task ApproveAdditionalIssueAsync(
-            ApproveAdditionalIssueDto dto, string userId)
+        public async Task ApproveAdditionalIssueAsync(ApproveAdditionalIssueDto dto, string userId)
         {
-            var issue = await _unitOfWork.GetRepo<AdditionalIssue, int>()
-                .GetByIdAsync(dto.IssueId);
+            var issue = await _unitOfWork.GetRepo<AdditionalIssue, int>().GetByIdAsync(dto.IssueId);
 
             if (issue is null) throw new NotFoundException(nameof(AdditionalIssue), dto.IssueId);
 
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(issue.BookingId));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(issue.BookingId));
 
             if (booking is null) throw new NotFoundException(nameof(Booking), issue.BookingId);
             if (booking.UserId != userId)
@@ -466,9 +290,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (issue.Status != AdditionalIssueStatus.Pending)
                 throw new BadRequestException("تمت معالجة هذه المشكلة بالفعل.");
 
-            issue.Status = dto.IsApproved
-                ? AdditionalIssueStatus.Approved
-                : AdditionalIssueStatus.Rejected;
+            issue.Status = dto.IsApproved ? AdditionalIssueStatus.Approved : AdditionalIssueStatus.Rejected;
 
             _unitOfWork.GetRepo<AdditionalIssue, int>().Update(issue);
 
@@ -511,22 +333,21 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 await _notificationService.SendAsync(
                     userId: booking.AssignedTechnician.UserId,
                     title: dto.IsApproved
-                               ? "وافق العميل على التكلفة الإضافية"
-                               : (issue.IsCritical
-                                  ? "رفض العميل المشكلة الحرجة — تابع الخدمات الأخرى"
-                                  : "رفض العميل التكلفة الإضافية"),
+                        ? "وافق العميل على التكلفة الإضافية"
+                        : (issue.IsCritical
+                            ? "رفض العميل المشكلة الحرجة — تابع الخدمات الأخرى"
+                            : "رفض العميل التكلفة الإضافية"),
                     message: $"العميل {booking.User.DisplayName} " +
-                               $"{(dto.IsApproved ? "وافق" : "رفض")} الحجز {booking.BookingNumber}.",
+                             $"{(dto.IsApproved ? "وافق" : "رفض")} الحجز {booking.BookingNumber}.",
                     type: dto.IsApproved
-                               ? NotificationType.AdditionalIssueApproved
-                               : NotificationType.AdditionalIssueRejected,
+                        ? NotificationType.AdditionalIssueApproved
+                        : NotificationType.AdditionalIssueRejected,
                     actionUrl: $"/technician/bookings/{booking.Id}");
         }
 
         public async Task<InvoiceDto> GetBookingInvoiceAsync(int bookingId, string userId)
         {
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(bookingId));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(bookingId));
 
             if (booking == null) throw new NotFoundException(nameof(Booking), bookingId);
             if (booking.UserId != userId)
@@ -537,8 +358,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 throw new BadRequestException("الفاتورة غير متاحة - الحجز ملغى");
 
             decimal svcCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0);
-            decimal addCost = booking.AdditionalIssues
-                .Where(ai => ai.IsApproved == true).Sum(ai => ai.EstimatedCost);
+            decimal addCost = booking.AdditionalIssues.Where(ai => ai.IsApproved == true).Sum(ai => ai.EstimatedCost);
 
             return new InvoiceDto
             {
@@ -556,27 +376,23 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 TechnicianName = booking.AssignedTechnician?.User?.DisplayName!,
                 TechnicianSpecialization = booking.AssignedTechnician?.Specialization!,
                 Services = _mapper.Map<List<InvoiceServiceItemDto>>(booking.BookingServices),
-                ApprovedIssues = _mapper.Map<List<InvoiceAdditionalIssueDto>>(
-                    booking.AdditionalIssues.Where(ai => ai.IsApproved == true).ToList()),
+                ApprovedIssues = _mapper.Map<List<InvoiceAdditionalIssueDto>>( booking.AdditionalIssues.Where(ai => ai.IsApproved == true).ToList()),
                 ServicesCost = svcCost,
                 AdditionalCost = addCost,
                 TotalCost = svcCost + addCost,
-                PaymentMethod = booking.PaymentMethod.ToString(),
+                PaymentMethod = booking.PaymentMethod?.ToString() ?? "غير محدد",
                 PaymentStatus = booking.PaymentStatus.ToString(),
             };
         }
 
         #endregion
 
-        // ════════════════════════════════════════════════════════════════════
         #region Technician
 
-        public async Task<Pagination<BookingDto>> GetMyAssignedBookingsAsync(
-            BookingSpecParams specParams, string userId)
+        public async Task<Pagination<BookingDto>> GetMyAssignedBookingsAsync( BookingSpecParams specParams, string userId)
         {
             var techSpec = new TechnicianSpecification(userId, byUserId: true);
-            var technician = await _unitOfWork.GetRepo<Technician, string>()
-                .GetWithSpecAsync(techSpec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
             if (technician is null) throw new ForbiddenException("لست فنياً معتمداً");
 
             specParams.TechnicianId = technician.Id;
@@ -590,16 +406,13 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             { Data = data };
         }
 
-        public async Task<BookingDetailsDto> GetBookingDetailsForTechnicianAsync(
-            int id, string userId)
+        public async Task<BookingDetailsDto> GetBookingDetailsForTechnicianAsync( int id, string userId)
         {
             var techSpec = new TechnicianSpecification(userId, byUserId: true);
-            var technician = await _unitOfWork.GetRepo<Technician, string>()
-                .GetWithSpecAsync(techSpec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>() .GetWithSpecAsync(techSpec);
             if (technician is null) throw new ForbiddenException("لست فنياً معتمداً");
 
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(id));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(id));
             if (booking == null) throw new NotFoundException(nameof(Booking), id);
 
             if (booking.TechnicianId != technician.Id)
@@ -608,16 +421,13 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return _mapper.Map<BookingDetailsDto>(booking);
         }
 
-        public async Task<AdditionalIssueDto> AddAdditionalIssueAsync(
-            int bookingId, AddAdditionalIssueDto issueDto, string userId)
+        public async Task<AdditionalIssueDto> AddAdditionalIssueAsync(int bookingId, AddAdditionalIssueDto issueDto, string userId)
         {
             var techSpec = new TechnicianSpecification(userId, byUserId: true);
-            var technician = await _unitOfWork.GetRepo<Technician, string>()
-                .GetWithSpecAsync(techSpec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
             if (technician is null) throw new ForbiddenException("لست فنياً معتمداً");
 
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(bookingId));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(bookingId));
             if (booking == null) throw new NotFoundException(nameof(Booking), bookingId);
 
             if (booking.TechnicianId != technician.Id)
@@ -625,8 +435,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             if (booking.Status != BookingStatus.InProgress &&
                 booking.Status != BookingStatus.Pending)
-                throw new BadRequestException(
-                    $"الحالة '{booking.Status}' — يجب InProgress أو Pending.");
+                throw new BadRequestException( $"الحالة '{booking.Status}' — يجب InProgress أو Pending.");
 
             if (booking.AdditionalIssues.Any(ai => ai.Status == AdditionalIssueStatus.Pending))
                 throw new BadRequestException("يوجد مشكلة معلقة في انتظار رد العميل.");
@@ -652,23 +461,20 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 userId: booking.UserId,
                 title: issueDto.IsCritical ? "مشكلة حرجة تحتاج موافقتك" : "تكلفة إضافية مطلوبة",
                 message: $"{(issueDto.IsCritical ? "مشكلة حرجة" : "مشكلة إضافية")} في الحجز " +
-                           $"{booking.BookingNumber}: {issueDto.Title} — {issueDto.EstimatedCost} ج.م.",
+                         $"{booking.BookingNumber}: {issueDto.Title} — {issueDto.EstimatedCost} ج.م.",
                 type: NotificationType.AdditionalIssueAdded,
                 actionUrl: $"/bookings/{bookingId}");
 
             return _mapper.Map<AdditionalIssueDto>(issue);
         }
 
-        public async Task<BookingDto> UpdateBookingStatusAsync(
-            int id, UpdateBookingStatusDto statusDto, string userId)
+        public async Task<BookingDto> UpdateBookingStatusAsync(int id, UpdateBookingStatusDto statusDto, string userId)
         {
             var techSpec = new TechnicianSpecification(userId, byUserId: true);
-            var technician = await _unitOfWork.GetRepo<Technician, string>()
-                .GetWithSpecAsync(techSpec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
             if (technician is null) throw new ForbiddenException("لست فنياً معتمداً");
 
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(id));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(id));
             if (booking == null) throw new NotFoundException(nameof(Booking), id);
 
             if (booking.TechnicianId != technician.Id)
@@ -683,8 +489,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             if (newStatus is BookingStatus.WaitingClientApproval or BookingStatus.Cancelled)
                 throw new BadRequestException("لا يمكن تعيين هذه الحالة يدوياً.");
 
-            if (newStatus == BookingStatus.Completed &&
-                booking.AdditionalIssues.Any(ai => ai.Status == AdditionalIssueStatus.Pending))
+            if (newStatus == BookingStatus.Completed && booking.AdditionalIssues.Any(ai => ai.Status == AdditionalIssueStatus.Pending))
                 throw new BadRequestException("يوجد مشكلة إضافية معلقة — لا يمكن الإكمال.");
 
             var validTransition = (booking.Status, newStatus) switch
@@ -694,8 +499,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                 _ => false
             };
             if (!validTransition)
-                throw new BadRequestException(
-                    $"انتقال غير مسموح: '{booking.Status}' → '{newStatus}'.");
+                throw new BadRequestException($"انتقال غير مسموح: '{booking.Status}' → '{newStatus}'.");
 
             booking.Status = newStatus;
 
@@ -704,9 +508,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             if (newStatus == BookingStatus.Completed)
             {
-                booking.PaymentStatus = PaymentStatus.Paid;
-                var veh = await _unitOfWork.GetRepo<Vehicle, int>()
-                    .GetByIdAsync(booking.VehicleId);
+                var veh = await _unitOfWork.GetRepo<Vehicle, int>().GetByIdAsync(booking.VehicleId);
                 if (veh != null)
                 {
                     veh.LastMaintenanceDate = DateTime.UtcNow;
@@ -720,8 +522,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             {
                 if (newStatus == BookingStatus.InProgress)
                 {
-                    var tech = await _unitOfWork.GetRepo<Technician, string>()
-                        .GetByIdAsync(booking.TechnicianId);
+                    var tech = await _unitOfWork.GetRepo<Technician, string>().GetByIdAsync(booking.TechnicianId);
                     if (tech != null)
                     {
                         tech.IsAvailable = false;
@@ -736,18 +537,16 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
             if (newStatus == BookingStatus.Completed)
             {
-                var allVehicle = (await _unitOfWork.GetRepo<Booking, int>()
-                    .GetAllWithSpecAsync(new BookingByVehicleAllSpecification(booking.VehicleId)))
-                    .ToList();
+                var allVehicle = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(new BookingByVehicleAllSpecification(booking.VehicleId))).ToList();
                 int completedCount = allVehicle.Count(b => b.Status == BookingStatus.Completed);
                 int totalCount = allVehicle.Count;
 
                 await _notificationService.SendAsync(
                     userId: booking.UserId,
                     title: totalCount > 1 ? $"تم إكمال خدمة {completedCount}/{totalCount}" : "تم إكمال الحجز",
-                    message: $"انتهت صيانة سيارتك للحجز {booking.BookingNumber}. يمكنك الاستلام.",
+                    message: $"انتهت صيانة سيارتك للحجز {booking.BookingNumber}. يمكنك الآن إتمام الدفع.",
                     type: NotificationType.BookingCompleted,
-                    actionUrl: $"/bookings/{booking.Id}");
+                    actionUrl: $"/bookings/{booking.Id}/pay");   //
             }
 
             if (newStatus == BookingStatus.InProgress)
@@ -758,14 +557,12 @@ namespace CarMaintenance.Core.Service.Services.Bookings
                     type: NotificationType.TechnicianAssigned,
                     actionUrl: $"/bookings/{booking.Id}");
 
-            var updated = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(id));
+            var updated = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(id));
             return _mapper.Map<BookingDto>(updated!);
         }
 
         #endregion
 
-        // ════════════════════════════════════════════════════════════════════
         #region Admin
 
         public async Task<Pagination<BookingDto>> GetAllBookingsAsync(BookingSpecParams specParams)
@@ -780,20 +577,23 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             { Data = data };
         }
 
+        public async Task<Pagination<BookingDto>> GetTodayBookingsAsync(BookingSpecParams specParams)
+        {
+            specParams.TodayOnly = true;
+            return await GetAllBookingsAsync(specParams);
+        }
+
         public async Task<BookingDto> AssignTechnicianAsync(int bookingId)
         {
-            var booking = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(bookingId));
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(bookingId));
             if (booking == null) throw new NotFoundException(nameof(Booking), bookingId);
             if (!string.IsNullOrEmpty(booking.TechnicianId))
                 throw new BadRequestException("الحجز معين لفني بالفعل");
 
-            var requiredSpecs = MapCategoriesToSpecs(
-                booking.BookingServices.Select(bs => bs.Service?.Category));
+            var requiredSpecs = MapCategoriesToSpecs(booking.BookingServices.Select(bs => bs.Service?.Category));
             var totalDuration = booking.BookingServices.Sum(bs => bs.Duration);
 
-            var techId = await SelectBestTechnicianAsync(
-                requiredSpecs, totalDuration, booking.ScheduledDate);
+            var techId = await SelectBestTechnicianAsync(requiredSpecs, totalDuration, booking.ScheduledDate);
 
             if (techId == null)
             {
@@ -810,8 +610,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
 
-            var updated = await _unitOfWork.GetRepo<Booking, int>()
-                .GetWithSpecAsync(new BookingSpecification(bookingId));
+            var updated = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(bookingId));
 
             await _notificationService.SendAsync(
                 userId: updated!.UserId,
@@ -832,25 +631,11 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         #endregion
 
-        // ════════════════════════════════════════════════════════════════════
         #region Private Helpers
 
-        /// <summary>
-        /// Selects the best available technician using specialization + capacity.
-        /// NO AI call — pure deterministic logic.
-        ///
-        /// Priority order:
-        ///   1. Full-match technicians (cover 100% of required specs) ordered by Rating desc
-        ///   2. Partial-match technicians (≥50%) ordered by coverage desc, then Rating desc
-        ///   3. null — caller must notify admin
-        /// </summary>
-        private async Task<string?> SelectBestTechnicianAsync(
-            List<string> requiredSpecs,
-            int totalDuration,
-            DateTime scheduledDate)
+        private async Task<string?> SelectBestTechnicianAsync( List<string> requiredSpecs, int totalDuration,DateTime scheduledDate)
         {
-            var allAvailable = (await _unitOfWork.GetRepo<Technician, string>()
-                .GetAllWithSpecAsync(new TechnicianSpecification(isAvailable: true))).ToList();
+            var allAvailable = (await _unitOfWork.GetRepo<Technician, string>().GetAllWithSpecAsync(new TechnicianSpecification(isAvailable: true))).ToList();
 
             var fullMatches = new List<(Technician tech, double rating)>();
             var partialMatches = new List<(Technician tech, double coverage, double rating)>();
@@ -894,8 +679,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             return null;
         }
 
-        private async Task TryAutoAssignAsync(
-            Booking booking, List<Domain.Models.Data.Service> services)
+        private async Task TryAutoAssignAsync(Booking booking, List<Domain.Models.Data.Service> services)
         {
             try
             {
@@ -972,25 +756,19 @@ namespace CarMaintenance.Core.Service.Services.Bookings
 
         private async Task<int> GetUsedMinutesOnDayAsync(string technicianId, DateTime day)
         {
-            var dayBookings = await _unitOfWork.GetRepo<Booking, int>()
-                .GetAllWithSpecAsync(new BookingStatsSpecification(technicianId, day.Date));
+            var dayBookings = await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(new BookingStatsSpecification(technicianId, day.Date));
             return dayBookings.Sum(b => b.BookingServices.Sum(bs => bs.Duration));
         }
 
-        /// <summary>Builds slots for the per-technician slot widget (CreateBooking response).</summary>
-        private async Task<TechnicianAvailableSlotsDto> BuildTechnicianSlotsAsync(
-            string technicianId)
+        private async Task<TechnicianAvailableSlotsDto> BuildTechnicianSlotsAsync(string technicianId)
         {
             var techSpec = new TechnicianSpecification(technicianId);
-            var technician = await _unitOfWork.GetRepo<Technician, string>()
-                .GetWithSpecAsync(techSpec);
+            var technician = await _unitOfWork.GetRepo<Technician, string>().GetWithSpecAsync(techSpec);
 
             if (technician is null)
                 return new TechnicianAvailableSlotsDto { TechnicianId = technicianId };
 
-            var activeBookings = (await _unitOfWork.GetRepo<Booking, int>()
-                .GetAllWithSpecAsync(new BookingByTechnicianActiveSpecification(technicianId)))
-                .ToList();
+            var activeBookings = (await _unitOfWork.GetRepo<Booking, int>().GetAllWithSpecAsync(new BookingByTechnicianActiveSpecification(technicianId))).ToList();
 
             var slots = BuildSlots(
                 activeBookings,
@@ -1006,8 +784,7 @@ namespace CarMaintenance.Core.Service.Services.Bookings
             };
         }
 
-        private async Task NotifyAdminsAsync(
-            string title, string message, NotificationType type, string? actionUrl = null)
+        private async Task NotifyAdminsAsync(string title, string message, NotificationType type, string? actionUrl = null)
         {
             var admins = await _userManager.GetUsersInRoleAsync("Admin");
             foreach (var admin in admins)
@@ -1015,5 +792,122 @@ namespace CarMaintenance.Core.Service.Services.Bookings
         }
 
         #endregion
+
+
+        #region Static helpers
+
+        // Normalises service categories (English slugs) to distinct lowercase keys.
+        // e.g. "Oil_Change", " brakes " → ["oil_change", "brakes"]
+        private static List<string> MapCategoriesToSpecs(IEnumerable<string?> categories)
+            => categories
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c!.Trim().ToLowerInvariant())
+                .Distinct()
+                .ToList();
+
+
+        // Normalises a comma-separated Specialization field (English slugs only)
+        // into distinct lowercase keys.
+        // e.g. "Oil_Change, BRAKES, engine" → ["oil_change", "brakes", "engine"]
+        private static List<string> NormalizeTechSpecs(string specialization)
+            => specialization
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.ToLowerInvariant())
+                .Distinct()
+                .ToList();
+
+        // Returns (isFullMatch, coverageRatio, coveredKeys, uncoveredKeys).
+        // isFullMatch = true when ratio == 1.0 (all required specs covered).
+        private static (bool full, double ratio, List<string> covered, List<string> uncovered) ComputeCoverage(List<string> techSpecs, List<string> required)
+        {
+            if (!required.Any()) return (true, 1.0, new(), new());
+            var covered = required.Where(r => techSpecs.Contains(r)).ToList();
+            var uncovered = required.Except(covered).ToList();
+            double ratio = (double)covered.Count / required.Count;
+            return (ratio >= 1.0, ratio, covered, uncovered);
+        }
+
+        private static List<AvailableSlotDto> BuildSlots(IReadOnlyList<Booking> activeBookings, DateTime fromDate, int requiredMinutes, DateTime now)
+        {
+            var today = now.Date;
+            var result = new List<AvailableSlotDto>();
+
+            for (int d = 0; d < MaxDaysLookAhead && result.Count < MaxSlotsToReturn; d++)
+            {
+                var date = fromDate.Date.AddDays(d);
+
+                // Build booked intervals for this day (minutes from midnight)
+                // End = start + max(duration, MinSlotWidth) to handle zero-duration edge case
+                var intervals = activeBookings
+                    .Where(b => b.ScheduledDate.Date == date)
+                    .Select(b =>
+                    {
+                        int s = b.ScheduledDate.Hour * 60 + b.ScheduledDate.Minute;
+                        int dur = b.BookingServices.Any()
+                            ? b.BookingServices.Sum(bs => bs.Duration)
+                            : MinSlotWidth;
+                        return (Start: s, End: s + Math.Max(dur, MinSlotWidth));
+                    })
+                    .OrderBy(i => i.Start)
+                    .ToList();
+
+                int cursor = WorkStartMinutes;
+
+                while (cursor + requiredMinutes <= WorkEndMinutes &&
+                       result.Count < MaxSlotsToReturn)
+                {
+                    var slotDateTime = date.AddMinutes(cursor);
+
+                    // Must be in the future
+                    if (slotDateTime <= now)
+                    {
+                        cursor += SlotStepMinutes;
+                        continue;
+                    }
+
+                    // Overlap check: any interval where [cursor, cursor+required) intersects [start, end)
+                    var blocking = intervals
+                        .Where(i => cursor < i.End && cursor + requiredMinutes > i.Start)
+                        .ToList();
+
+                    if (!blocking.Any())
+                    {
+                        result.Add(new AvailableSlotDto
+                        {
+                            SlotDateTime = slotDateTime,
+                            Label = FormatSlotLabel(slotDateTime, today)
+                        });
+                        cursor += SlotStepMinutes;
+                    }
+                    else
+                    {
+                        // Jump past the last blocking interval end
+                        cursor = blocking.Max(i => i.End);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static string FormatSlotLabel(DateTime slotUtc, DateTime todayUtc)
+        {
+            var cairoTz = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            var slot = TimeZoneInfo.ConvertTimeFromUtc(slotUtc, cairoTz);
+            var today = TimeZoneInfo.ConvertTimeFromUtc(todayUtc, cairoTz).Date;
+
+            var day = slot.Date == today.AddDays(1) ? "غداً" :
+                      slot.Date == today.AddDays(2) ? "بعد غد" :
+                      slot.Date.ToString("dd/MM");
+            var h12 = slot.Hour > 12 ? slot.Hour - 12 : slot.Hour == 0 ? 12 : slot.Hour;
+            return $"{day} {h12}:00 {(slot.Hour < 12 ? "ص" : "م")}";
+        }
+
+        private static string GenerateBookingNumber()
+            => $"BK-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+
+        #endregion
+
+
     }
 }

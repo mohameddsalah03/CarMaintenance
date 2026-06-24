@@ -1,7 +1,6 @@
 ﻿using CarMaintenance.APIs.Controllers.Controllers.Base;
 using CarMaintenance.Core.Service.Abstraction.Services;
 using CarMaintenance.Shared.DTOs.Technicians;
-using CarMaintenance.Shared.DTOs.Technicians.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,18 +22,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Technicians
         public async Task<ActionResult<TechniciansDto>> GetTechnician(string id)
             => Ok(await serviceManager.TechniciansService.GetTechnicianByIdAsync(id));
 
-        // AI endpoints
-        [HttpGet("{id}/stats")]
-        public async Task<ActionResult<TechnicianStatsDto>> GetStats(string id)
-            => Ok(await serviceManager.TechniciansService.GetTechnicianStatsAsync(id));
-
-        [HttpGet("{id}/workload")]
-        public async Task<ActionResult<TechnicianWorkloadDto>> GetWorkload(string id)
-            => Ok(await serviceManager.TechniciansService.GetTechnicianWorkloadAsync(id));
-
-        [HttpGet("{id}/rating")]
-        public async Task<ActionResult<TechnicianRatingDto>> GetRating(string id)
-            => Ok(await serviceManager.TechniciansService.GetTechnicianRatingAsync(id));
 
         #endregion
 

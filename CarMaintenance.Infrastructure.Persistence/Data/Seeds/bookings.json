@@ -46,7 +46,7 @@
     "description": "العربية بتهز على سرعة 80 وما بتبقاش ثابتة على الطريق",
     "totalCost": 180.0,
     "paymentStatus": "Pending",
-    "paymentMethod": "Cash",
+    "paymentMethod": null,
     "userId": "cust-001",
     "vehicleId": 2,
     "technicianId": "tech-006"
@@ -59,7 +59,7 @@
     "description": "البطارية بتفضى بسرعة والعربية مش بتشتغل من أول مرة",
     "totalCost": 150.0,
     "paymentStatus": "Pending",
-    "paymentMethod": "CreditCard",
+    "paymentMethod": null,
     "userId": "cust-004",
     "vehicleId": 5,
     "technicianId": "tech-007"
@@ -72,7 +72,7 @@
     "description": "محتاج فحص المحرك الإلكتروني ظهرت لمبة check engine",
     "totalCost": 200.0,
     "paymentStatus": "Pending",
-    "paymentMethod": "Cash",
+    "paymentMethod": null,
     "userId": "cust-002",
     "vehicleId": 3,
     "technicianId": null

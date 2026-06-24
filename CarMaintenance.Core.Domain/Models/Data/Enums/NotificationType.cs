@@ -9,6 +9,8 @@
         AdditionalIssueRejected,
         BookingCompleted,
         BookingCancelled,
-        NewReview
+        NewReview,
+        PaymentCompleted,   
+        PaymentFailed       
     }
 }

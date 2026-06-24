@@ -3,6 +3,7 @@ using CarMaintenance.Core.Domain.Models.Data;
 using CarMaintenance.Core.Domain.Models.Data.Enums;
 using CarMaintenance.Core.Domain.Specifications.Bookings;
 using CarMaintenance.Core.Service.Abstraction.Common.Infrastructure;
+using CarMaintenance.Core.Service.Abstraction.Services.Notifications;
 using CarMaintenance.Core.Service.Abstraction.Services.Payments;
 using CarMaintenance.Shared.DTOs.Payment;
 using CarMaintenance.Shared.DTOs.Payment.Callback;
@@ -16,74 +17,84 @@ namespace CarMaintenance.Core.Service.Services.Payments
     public class PaymentService(
         IPaymobService _paymobService,
         IUnitOfWork _unitOfWork,
-        IOptions<PaymobSettings> _paymobOptions
+        IOptions<PaymobSettings> _paymobOptions,
+        INotificationService _notificationService
     ) : IPaymentService
     {
         private readonly PaymobSettings _paymobSettings = _paymobOptions.Value;
 
-        public async Task<PaymentInitiatedDto> InitiatePaymentAsync( InitiatePaymentDto dto, string userId)
-        {
-            var spec = new BookingSpecification(dto.BookingId);
-            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(spec);
+        #region Public API
 
-            if (booking == null)
+        public async Task<PaymentInitiatedDto> InitiatePaymentAsync(InitiatePaymentDto dto, string userId)
+        {
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingSpecification(dto.BookingId));
+
+            if (booking is null)
                 throw new NotFoundException(nameof(Booking), dto.BookingId);
 
             if (booking.UserId != userId)
-                throw new ForbiddenException("ليس لديك صلاحية لدفع هذا الحجز");
+                throw new ForbiddenException("ليس لديك صلاحية للدفع على هذا الحجز");
 
             if (booking.PaymentStatus == PaymentStatus.Paid)
-                throw new BadRequestException("تم دفع هذا الحجز بالفعل");
+                throw new BadRequestException("هذا الحجز مدفوع بالفعل");
 
-            if (booking.Status == BookingStatus.Cancelled)
-                throw new BadRequestException("لا يمكن دفع حجز ملغى");
+            // not completed 
+            if (booking.Status != BookingStatus.Completed)
+            {
+                var reason = booking.Status switch
+                {
+                    BookingStatus.Pending => "الحجز لم يبدأ بعد",
+                    BookingStatus.InProgress => "الحجز قيد التنفيذ — الدفع بعد الانتهاء",
+                    BookingStatus.WaitingClientApproval => "يوجد تكلفة إضافية في انتظار ردك",
+                    BookingStatus.Cancelled => "لا يمكن دفع حجز ملغى",
+                    _ => $"الحالة '{booking.Status}' لا تسمح بالدفع"
+                };
+                throw new BadRequestException(reason);
+            }
 
-            if (booking.PaymentMethod == PaymentMethod.Cash)
-                throw new BadRequestException("هذا الحجز مسجل بطريقة الدفع نقداً عند الاستلام. " +  "لا يمكن استخدام الدفع الإلكتروني لهذا الحجز.");
+            // validate on paymentMethod  // convert string to enum 
+            if (!Enum.TryParse<PaymentMethod>(dto.PaymentMethod, true, out var method))
+                throw new BadRequestException($"طريقة دفع غير صحيحة: '{dto.PaymentMethod}'. القيم المقبولة: Cash, CreditCard");
 
-            //
-            if (booking.Status == BookingStatus.Pending)
-                throw new BadRequestException( "لا يمكن الدفع الآن — الحجز لم يبدأ بعد وقد تتغير التكلفة النهائية.");
 
-            if (booking.Status == BookingStatus.WaitingClientApproval)
-                throw new BadRequestException( "لا يمكن الدفع الآن — يوجد تكلفة إضافية في انتظار موافقتك. " + "يرجى الرد على التكلفة الإضافية أولاً.");
-
-            var correctCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0) 
+            var correctCost = booking.BookingServices.Sum(bs => bs.Service?.BasePrice ?? 0)
                             + booking.AdditionalIssues.Where(ai => ai.Status == AdditionalIssueStatus.Approved)
                                                       .Sum(ai => ai.EstimatedCost);
 
-            // لو التكلفة المحفوظة مختلفة → نصلحها قبل الدفع
-            if (booking.TotalCost != correctCost && correctCost > 0)
-            {
+            if (correctCost > 0 && booking.TotalCost != correctCost)
                 booking.TotalCost = correctCost;
+
+            booking.PaymentMethod = method;
+
+            // 7️ Cash flow 
+            if (method == PaymentMethod.Cash)
+            {
+                booking.PaymentStatus = PaymentStatus.Paid;
+                booking.PaidAt = DateTime.UtcNow;                  
+                booking.PaymentProcessedByUserId = userId;         
+
                 _unitOfWork.GetRepo<Booking, int>().Update(booking);
                 await _unitOfWork.SaveChangesAsync();
+
+                await _notificationService.SendAsync(
+                    userId: userId,
+                    title: "تم تأكيد الدفع نقداً",
+                    message: $"تم تسجيل دفع الحجز {booking.BookingNumber} نقداً ({booking.TotalCost} ج.م).",
+                    type: NotificationType.PaymentCompleted,
+                    actionUrl: $"/bookings/{booking.Id}");
+
+                return new PaymentInitiatedDto
+                {
+                    IFrameUrl = string.Empty,
+                    PaymentToken = "cash" // paymob معناها مفيش  
+                };
             }
 
+            // 8 CreditCard flow 
+            _unitOfWork.GetRepo<Booking, int>().Update(booking);
+            await _unitOfWork.SaveChangesAsync();
 
-            var integrationId = dto.PaymentMethod.ToLower() switch
-            {
-                "card" => _paymobSettings.CardIntegrationId,
-                "wallet" => _paymobSettings.WalletIntegrationId,
-                _ => throw new BadRequestException(
-                    "طريقة دفع غير صحيحة. القيم المقبولة: card, wallet")
-            };
-
-            var amountCents    = (int)(booking.TotalCost * 100);
-            var email          = booking.User?.Email        ?? "noemail@fixora.com";
-            var phone          = booking.User?.PhoneNumber  ?? "01000000000";
-            var merchantOrderId = $"FIXORA-{booking.BookingNumber}";
-
-            var authToken    = await _paymobService.GetAuthTokenAsync();
-            var orderId      = await _paymobService.CreateOrderAsync(authToken, amountCents, merchantOrderId);
-            var paymentToken = await _paymobService.GetPaymentKeyAsync( authToken, orderId, amountCents, integrationId, email, phone);
-
-            var iFrameUrl = _paymobService.BuildIFrameUrl(paymentToken);
-            return new PaymentInitiatedDto
-            {
-                IFrameUrl    = iFrameUrl,
-                PaymentToken = paymentToken
-            };
+            return await InitiatePaymobPaymentAsync(booking);
         }
 
         public async Task HandleCallbackAsync(string rawBody, string hmac)
@@ -91,59 +102,101 @@ namespace CarMaintenance.Core.Service.Services.Payments
             PaymobCallbackDto? callback;
             try
             {
-                callback = JsonSerializer.Deserialize<PaymobCallbackDto>(rawBody,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                callback = JsonSerializer.Deserialize<PaymobCallbackDto>(rawBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
-            catch (Exception ex)
+            catch
             {
                 return;
             }
 
             if (callback?.Type != "TRANSACTION" || callback.Obj == null)
-            {
                 return;
-            }
 
             if (!_paymobService.VerifyHmac(callback.Obj, hmac))
-            {
                 throw new BadRequestException("Invalid HMAC signature");
-            }
 
             var merchantOrderId = callback.Obj.Order?.MerchantOrderId;
             if (string.IsNullOrEmpty(merchantOrderId))
-            {
                 return;
-            }
 
             var bookingNumber = merchantOrderId.Replace("FIXORA-", "");
-            var bookingSpec   = new BookingByNumberSpecification(bookingNumber);
-            var booking       = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(bookingSpec);
+            var booking = await _unitOfWork.GetRepo<Booking, int>().GetWithSpecAsync(new BookingByNumberSpecification(bookingNumber));
 
             if (booking == null)
-            {
                 return;
-            }
 
+            // Idempotency
             if (booking.PaymentStatus == PaymentStatus.Paid)
-            {
                 return;
-            }
 
-            if (callback.Obj.Success && !callback.Obj.Pending)
+            bool isSuccess = callback.Obj.Success && !callback.Obj.Pending;
+            bool isFailure = !callback.Obj.Success && !callback.Obj.Pending;
+
+            if (isSuccess)
             {
                 booking.PaymentStatus = PaymentStatus.Paid;
+                booking.PaymobTransactionId = callback.Obj.Id.ToString();   
+                booking.PaidAt = DateTime.UtcNow;                           
+                                                                            
             }
-            else if (!callback.Obj.Success && !callback.Obj.Pending)
+            else if (isFailure)
             {
                 booking.PaymentStatus = PaymentStatus.Failed;
             }
             else
             {
-                return;
+                return;  // Pending 
             }
 
             _unitOfWork.GetRepo<Booking, int>().Update(booking);
             await _unitOfWork.SaveChangesAsync();
+
+            
+            if (isSuccess)
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.UserId,
+                    title: "تم تأكيد الدفع",
+                    message: $"تم استلام دفع الحجز {booking.BookingNumber} ({booking.TotalCost} ج.م).",
+                    type: NotificationType.PaymentCompleted,
+                    actionUrl: $"/bookings/{booking.Id}");
+            }
+            else
+            {
+                await _notificationService.SendAsync(
+                    userId: booking.UserId,
+                    title: "فشل الدفع",
+                    message: $"فشلت عملية دفع الحجز {booking.BookingNumber}. يمكنك المحاولة مرة أخرى.",
+                    type: NotificationType.PaymentFailed,
+                    actionUrl: $"/bookings/{booking.Id}");
+            }
         }
+
+        #endregion
+
+        #region Private Helpers
+
+        
+        private async Task<PaymentInitiatedDto> InitiatePaymobPaymentAsync(Booking booking)
+        {
+            var integrationId = _paymobSettings.CardIntegrationId;
+
+            var amountCents = (int)(booking.TotalCost * 100);
+            var email = booking.User?.Email ?? "noemail@fixora.com";
+            var phone = booking.User?.PhoneNumber ?? "01000000000";
+            var merchantOrderId = $"FIXORA-{booking.BookingNumber}";
+
+            var authToken = await _paymobService.GetAuthTokenAsync();
+            var orderId = await _paymobService.CreateOrderAsync(authToken, amountCents, merchantOrderId);
+            var paymentToken = await _paymobService.GetPaymentKeyAsync(authToken, orderId, amountCents, integrationId, email, phone);
+
+            return new PaymentInitiatedDto
+            {
+                IFrameUrl = _paymobService.BuildIFrameUrl(paymentToken),
+                PaymentToken = paymentToken
+            };
+        }
+
+        #endregion
     }
 }

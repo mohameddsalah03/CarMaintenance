@@ -72,7 +72,7 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.TechnicianExperienceYears, opt => opt.MapFrom(src => src.AssignedTechnician!.ExperienceYears))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
-                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src =>src.PaymentMethod.HasValue ? src.PaymentMethod.Value.ToString() : null))
                 .ForMember(dest => dest.BookingServiceDetailsDtos, opt => opt.MapFrom(src => src.BookingServices));
 
             CreateMap<Review, ReviewSummaryDto>()
@@ -96,7 +96,7 @@ namespace CarMaintenance.Core.Service.Mapping
                 .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.IsApproved)); 
 
             CreateMap<CreateBookingDto, Booking>()
-                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => Enum.Parse<PaymentMethod>(src.PaymentMethod, true)))
+                .ForMember(dest => dest.PaymentMethod, opt=>opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.PaymentStatus, opt => opt.Ignore())
                 .ForMember(dest => dest.BookingNumber, opt => opt.Ignore())

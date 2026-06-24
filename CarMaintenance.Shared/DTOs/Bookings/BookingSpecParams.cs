@@ -16,9 +16,12 @@
         public string? Status { get; set; }        // Filter by status
         public string? UserId { get; set; }        // Filter by customer
         public string? TechnicianId { get; set; }  // Filter by technician
+        public int? VehicleId { get; set; } //
         public DateTime? FromDate { get; set; }    // Date range start
         public DateTime? ToDate { get; set; }      // Date range end
         public string? Sort { get; set; }          // "dateAsc", "dateDesc"
+
+        public bool TodayOnly { get; set; } = false;
 
     }
 }

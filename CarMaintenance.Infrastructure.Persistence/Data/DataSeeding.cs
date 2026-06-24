@@ -66,37 +66,6 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
             foreach (var role in new[] { "Admin", "Customer", "Technician" })
                 await _roleManager.CreateAsync(new IdentityRole(role));
         }
-
-
-        //private async Task SeedUsersAsync()
-        //{
-        //    if (_userManager.Users.Any()) return;
-
-        //    var filePath = Path.Combine(_seedsPath, "users.json");
-        //    if (!File.Exists(filePath)) return;
-
-        //    await using var stream = File.OpenRead(filePath);
-        //    var dtos = await JsonSerializer.DeserializeAsync<List<UserSeedDto>>(stream, _opts);
-        //    if (dtos is null || !dtos.Any()) return;
-
-        //    foreach (var dto in dtos)
-        //    {
-        //        var user = new ApplicationUser
-        //        {
-        //            Id = dto.Id,
-        //            DisplayName = dto.DisplayName,
-        //            UserName = dto.UserName,
-        //            Email = dto.Email,
-        //            PhoneNumber = dto.PhoneNumber,
-        //            EmailConfirmed = true   
-        //        };
-
-        //        var result = await _userManager.CreateAsync(user, dto.Password);
-        //        if (result.Succeeded)
-        //            await _userManager.AddToRoleAsync(user, dto.Role);
-        //    }
-        //}
-
         private async Task SeedUsersAsync()
         {
             var filePath = Path.Combine(_seedsPath, "users.json");
@@ -108,13 +77,10 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
 
             foreach (var dto in dtos)
             {
-                // البحث باستخدام الإيميل لأنه فريد
                 var existingUser = await _userManager.FindByEmailAsync(dto.Email);
 
                 if (existingUser == null)
                 {
-                    // 1. حالة إضافة مستخدم جديد (لو مش موجود بالإيميل)
-                    // نتحقق أولاً إن الرقم مش محجوز لحد تاني لتجنب مشاكل الـ Unique Index لو لسه موجود
                     var userWithSamePhone = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == dto.PhoneNumber);
 
                     if (userWithSamePhone == null)
@@ -138,10 +104,8 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                 }
                 else
                 {
-                    // 2. حالة تحديث مستخدم موجود (موجود بالإيميل بس بنحدث باقي البيانات الناقصة)
                     bool isUpdated = false;
 
-                    // تحديث رقم الهاتف لو اختلف ومش مكرر
                     if (existingUser.PhoneNumber != dto.PhoneNumber)
                     {
                         var isPhoneTaken = _userManager.Users.Any(u => u.PhoneNumber == dto.PhoneNumber && u.Id != existingUser.Id);
@@ -152,27 +116,23 @@ namespace CarMaintenance.Infrastructure.Persistence.Data
                         }
                     }
 
-                    // تحديث الـ DisplayName لو ناقص أو اختلف
                     if (existingUser.DisplayName != dto.DisplayName)
                     {
                         existingUser.DisplayName = dto.DisplayName;
                         isUpdated = true;
                     }
 
-                    // تحديث الـ UserName لو اختلف
                     if (existingUser.UserName != dto.UserName)
                     {
                         existingUser.UserName = dto.UserName;
                         isUpdated = true;
                     }
 
-                    // لو حصل أي تغيير، نحفظ التعديلات
                     if (isUpdated)
                     {
                         await _userManager.UpdateAsync(existingUser);
                     }
 
-                    // التأكد من أن المستخدم في الدور (Role) الصحيح
                     if (!await _userManager.IsInRoleAsync(existingUser, dto.Role))
                     {
                         await _userManager.AddToRoleAsync(existingUser, dto.Role);

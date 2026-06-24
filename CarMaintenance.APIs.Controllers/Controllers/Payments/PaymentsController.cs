@@ -12,8 +12,7 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Payments
         // POST: /api/payments/initiate
         [Authorize(Roles = "Customer")]
         [HttpPost("initiate")]
-        public async Task<ActionResult<PaymentInitiatedDto>> InitiatePayment(
-            [FromBody] InitiatePaymentDto dto)
+        public async Task<ActionResult<PaymentInitiatedDto>> InitiatePayment([FromBody] InitiatePaymentDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var result = await _paymentService.InitiatePaymentAsync(dto, userId);
@@ -21,7 +20,6 @@ namespace CarMaintenance.APIs.Controllers.Controllers.Payments
         }
 
         // POST: /api/payments/callback
-        // Paymob calls this — must be anonymous and always return 200
         [AllowAnonymous]
         [HttpPost("callback")]
         public async Task<ActionResult> HandleCallback()

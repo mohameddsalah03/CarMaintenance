@@ -25,16 +25,14 @@ namespace CarMaintenance.Core.Service
         public async Task<Pagination<ServiceDto>> GetServicesAsync(ServiceSpecParams specParams)
         {
             var spec = new ServiceSpecification(specParams);
-            var services = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                .GetAllWithSpecAsync(spec);
+            var services = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetAllWithSpecAsync(spec);
 
             // Map then enrich with rating data
             var data = mapper.Map<IEnumerable<ServiceDto>>(services).ToList();
             await EnrichWithRatingsAsync(data);
 
             var specCount = new ServiceWithFiltrationForCountSpecification(specParams);
-            var count = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                .GetCountAsync(specCount);
+            var count = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetCountAsync(specCount);
 
             return new Pagination<ServiceDto>(specParams.PageIndex, specParams.PageSize, count)
             { Data = data };
@@ -43,8 +41,7 @@ namespace CarMaintenance.Core.Service
         public async Task<ServiceDto?> GetServiceByIdAsync(int id)
         {
             var spec = new ServiceSpecification(id);
-            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                .GetWithSpecAsync(spec);
+            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetWithSpecAsync(spec);
 
             if (service is null)
                 throw new NotFoundException(nameof(Service), id);
@@ -58,8 +55,7 @@ namespace CarMaintenance.Core.Service
 
         public async Task<ServiceDto> UpdateServiceAsync(UpdateServiceDto updateDto)
         {
-            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                .GetByIdAsync(updateDto.Id);
+            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(updateDto.Id);
 
             if (service is null)
                 throw new NotFoundException(nameof(Domain.Models.Data.Service), updateDto.Id);
@@ -85,8 +81,7 @@ namespace CarMaintenance.Core.Service
 
         public async Task DeleteServiceAsync(int id)
         {
-            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                .GetByIdAsync(id);
+            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(id);
 
             if (service is null)
                 throw new NotFoundException(nameof(Service), id);
@@ -98,8 +93,7 @@ namespace CarMaintenance.Core.Service
         public async Task<ServiceDetailsDto?> GetServiceDetailsAsync(int id)
         {
             var spec = new ServiceSpecification(id);
-            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                .GetWithSpecAsync(spec);
+            var service = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetWithSpecAsync(spec);
 
             if (service is null)
                 throw new NotFoundException(nameof(Domain.Models.Data.Service), id);
@@ -107,21 +101,17 @@ namespace CarMaintenance.Core.Service
             var serviceDetails = mapper.Map<ServiceDetailsDto>(service);
             await EnrichSingleWithRatingAsync(serviceDetails);
 
-            var techSpec = new TechnicianByServiceCategorySpecification(
-                service.Category, onlyAvailable: true);
-            var filteredTechnicians = await unitOfWork.GetRepo<Technician, string>()
-                .GetAllWithSpecAsync(techSpec);
+            var techSpec = new TechnicianByServiceCategorySpecification( service.Category, onlyAvailable: true);
+            var filteredTechnicians = await unitOfWork.GetRepo<Technician, string>() .GetAllWithSpecAsync(techSpec);
 
-            serviceDetails.AvailableTechnicians =
-                mapper.Map<List<TechniciansDto>>(filteredTechnicians);
+            serviceDetails.AvailableTechnicians = mapper.Map<List<TechniciansDto>>(filteredTechnicians);
 
             return serviceDetails;
         }
 
         #endregion
 
-        public async Task<AnalyzeProblemResponseDto> AnalyzeProblemAsync(
-            AnalyzeProblemRequestDto requestDto, string? userId)
+        public async Task<AnalyzeProblemResponseDto> AnalyzeProblemAsync(AnalyzeProblemRequestDto requestDto, string? userId)
         {
             var aiRequest = new AiDiagnosisRequestDto
             {
@@ -163,12 +153,8 @@ namespace CarMaintenance.Core.Service
             };
         }
 
-        // ── Private helpers ──────────────────────────────────────────────────
-
-        /// <summary>
-        /// Enriches a list of ServiceDtos with AverageRating and ReviewCount
-        /// by running one review query per service.
-        /// </summary>
+        // Private helpers
+       
         private async Task EnrichWithRatingsAsync(IEnumerable<ServiceDto> dtos)
         {
             foreach (var dto in dtos)
@@ -178,25 +164,21 @@ namespace CarMaintenance.Core.Service
         private async Task EnrichSingleWithRatingAsync(ServiceDto dto)
         {
             var reviewSpec = new ReviewByServiceSpecification(dto.Id);
-            var reviews = (await unitOfWork.GetRepo<Review, int>()
-                .GetAllWithSpecAsync(reviewSpec)).ToList();
+            var reviews = (await unitOfWork.GetRepo<Review, int>().GetAllWithSpecAsync(reviewSpec)).ToList();
 
             dto.ReviewCount = reviews.Count;
             dto.AverageRating = reviews.Any()
                 ? Math.Round(reviews.Average(r =>
-                    (r.ServiceRating + r.TechnicianRating) / 2.0), 1)
-                : 0;
+                    (r.ServiceRating + r.TechnicianRating) / 2.0), 1): 0;
         }
 
-        private async Task<List<ValidatedServiceSuggestionDto>>
-            ValidateAndEnrichServiceIdsAsync(List<AiRecommendedServiceDto> aiServices)
+        private async Task<List<ValidatedServiceSuggestionDto>> ValidateAndEnrichServiceIdsAsync(List<AiRecommendedServiceDto> aiServices)
         {
             var validated = new List<ValidatedServiceSuggestionDto>();
 
             foreach (var aiSvc in aiServices)
             {
-                var dbService = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>()
-                    .GetByIdAsync(aiSvc.ServiceId);
+                var dbService = await unitOfWork.GetRepo<Domain.Models.Data.Service, int>().GetByIdAsync(aiSvc.ServiceId);
 
                 if (dbService is null) continue;
 
@@ -215,8 +197,7 @@ namespace CarMaintenance.Core.Service
             return validated;
         }
 
-        private async Task<AiVehicleContextDto?> BuildVehicleContextAsync(
-            int? vehicleId, string? userId)
+        private async Task<AiVehicleContextDto?> BuildVehicleContextAsync(int? vehicleId, string? userId)
         {
             if (vehicleId is null || string.IsNullOrEmpty(userId))
                 return null;

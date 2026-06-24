@@ -1,8 +1,12 @@
-﻿namespace CarMaintenance.Shared.DTOs.Payment
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CarMaintenance.Shared.DTOs.Payment
 {
     public class InitiatePaymentDto
     {
         public int BookingId { get; set; }
-        public string PaymentMethod { get; set; } = "card";
+
+        [Required(ErrorMessage = "طريقة الدفع مطلوبة")]
+        public string PaymentMethod { get; set; } = "Cash"; 
     }
 }
