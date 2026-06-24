@@ -1,7 +1,7 @@
 # FIXORA Car Maintenance API
 Welcome to the FIXORA Car Maintenance API — A RESTful API built with ASP.NET Core 8.0 for managing a car maintenance booking platform. The API handles customer bookings, technician auto-assignment, Paymob payment processing, AI-powered problem diagnosis, and real-time notifications via SignalR.
 
-**Live API:** `http://carmaintenancefixora.runasp.net`
+**Live API:** `http://carmaintenancefixora.runasp.net/swagger/index.html`
 
 ---
 
